@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8" ?><rss version="2.0" xml:base="http://marketplace.eclipse.org/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Eclipse Plugins, Bundles and Products - Eclipse Marketplace</title>
+    <link>http://marketplace.eclipse.org/</link>
+    <description></description>
+    <language>en</language>
+     <atom:link href="http://marketplace.eclipse.org/rss.xml" rel="self" type="application/rss+xml" />
+      <item>
+    <title>jSparrow - Automatical Java Code Improvement</title>
+    <link>http://marketplace.eclipse.org/content/jsparrow-automatical-java-code-improvement</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/jSparrow_Fluegel_110x80.jpg&quot; width=&quot;110&quot; height=&quot;77&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Tue, 2017-06-20 11:34&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 11:39&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22Splendit%20IT-Consulting%20GmbH%22&quot;&gt;Splendit IT-Consulting GmbH&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/mprehofer/listings&quot; title=&quot;Michaela Prehofer&quot;&gt;Michaela Prehofer&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;p&gt;jSparrow is an automated Eclipse PlugIn, which finds and replaces different kinds of threats in Java software systems with a rule based approach.&lt;br /&gt;
+	It applies coding conventions, removes code smells, improves readability and helps the upgrade process to newer Java versions.&lt;/p&gt;
+&lt;p&gt;	The usage of  jSparrow allows you to save a lot of valuable time, while offering the option of automatically upgrading to the latest version of Java within minutes in a safe way.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;set standards&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;jSparrow redefines the way companies can set programming standards and improve the legacy code.  jSparrow has a big range of rules to support standards.&lt;/p&gt;
+&lt;p&gt;	&lt;em&gt;ArithmeticAssignment – BracketsToControl – &lt;strong&gt;CodeFormatter&lt;/strong&gt; – FieldNameConvention – MultiVariableDeclarationLine – &lt;strong&gt;OrganiseImports &lt;/strong&gt;– RearrangeClassMembers – StringConcatToPlus – StringLiteralEqualityCheck – StringUtils – &lt;strong&gt;SystemOutToLogging&lt;/strong&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;code smells&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Removal of potential bugs and code smells is one of the main purposes of jSparrow. jSparrow is very efficient in disposing of these threats with its rules.  &lt;/p&gt;
+&lt;p&gt;	&lt;em&gt;&lt;strong&gt;InefficientConstructor &lt;/strong&gt;– MultiVariableDeclarationLine – &lt;strong&gt;OverrideAnnotation &lt;/strong&gt;– PrimitiveBoxedForString – RemoveNewStringConstructor – RemoveToStringOnString – SerialVersionUid – StringFormatLineSeparator – StringLiteralEqualityCheck – SystemOutToLogging&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;modernization &lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Being up to date with the latest Java standards is requiring a lot of software maintenance work. jSparrow upgrades old code-artifacts to new state-of-the-art programming practices.&lt;/p&gt;
+&lt;p&gt;	&lt;em&gt;CollectionRemoveAll – DiamondRule – &lt;strong&gt;ForEachToLambda &lt;/strong&gt;– &lt;strong&gt;ForToForEach &lt;/strong&gt;– FunctionalInterface – LambdaToMethodReference – MultiCatch – StatementLambdaToExpression – SystemOutToLogging – &lt;strong&gt;TryWithResource &lt;/strong&gt;– WhileToForEach&lt;/em&gt;&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Tue, 20 Jun 2017 15:34:11 +0000</pubDate>
+ <dc:creator>mprehofer</dc:creator>
+ <guid isPermaLink="false">3503691 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/jsparrow-automatical-java-code-improvement#comments</comments>
+  </item>
+  <item>
+    <title>Code Sharing for Slack</title>
+    <link>http://marketplace.eclipse.org/content/code-sharing-slack</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/ecs.png&quot; width=&quot;110&quot; height=&quot;80&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Mon, 2015-10-26 10:10&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 11:34&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22Genuitec%2C%20LLC%22&quot;&gt;Genuitec, LLC&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/twebbcke/listings&quot; title=&quot;Tim Webb&quot;&gt;Tim Webb&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;p&gt;Code Sharing for Slack provides code sharing to your &lt;strong&gt;#Slack&lt;/strong&gt; channel automatically! 100% free, installable separably from the &lt;a href=&quot;https://www.genuitec.com/products/webclipse/&quot; rel=&quot;nofollow&quot;&gt;Webclipse&lt;/a&gt; suite.  If you have Slack for Eclipse installed and a teammate shares code with you, your Eclipse can offer opening the same code being discussed. Made available for free, for unlimited usage. &lt;a href=&quot;https://www.genuitec.com/products/webclipse/pricing/&quot; rel=&quot;nofollow&quot;&gt;Learn more&lt;/a&gt; about other always free Webclipse features as well as some other great features as well!&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Mon, 26 Oct 2015 14:10:50 +0000</pubDate>
+ <dc:creator>twebbcke</dc:creator>
+ <guid isPermaLink="false">2582095 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/code-sharing-slack#comments</comments>
+  </item>
+  <item>
+    <title>Webclipse</title>
+    <link>http://marketplace.eclipse.org/content/webclipse</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/webclipse110x80_1.png&quot; width=&quot;100&quot; height=&quot;73&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Mon, 2015-07-27 09:32&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 11:34&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22Genuitec%2C%20LLC%22&quot;&gt;Genuitec, LLC&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/twebbcke/listings&quot; title=&quot;Tim Webb&quot;&gt;Tim Webb&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;p&gt;From JSjet with TypeScript and JavaScript to Live Preview, from Breadcrumbs to an enhanced Project Explorer, &lt;strong&gt;Webclipse&lt;/strong&gt; powers up Eclipse for the full-stack developer. Web developers can now get outstanding web development, from rapid validation, syntax coloring, call hierarchies, content assist to refactoring, outline views, and more. Included in Webclipse:&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;
+		&lt;strong&gt;JSjet&lt;/strong&gt; gives you a jet engine to power your TypeScript &amp;amp; JavaScript coding - no more does JS in Eclipse need to be a second class citizen! Includes support for node.js.&lt;/li&gt;
+&lt;li&gt;
+		&lt;strong&gt;Angular IDE&lt;/strong&gt; gives you a powerful development environment for Angular 2 development including advanced template editing support.&lt;/li&gt;
+&lt;li&gt;
+		&lt;strong&gt;TypeScript&lt;/strong&gt; support gives you commercial-grade coding, validation and transpilaton of your TypeScript projects including Angular 2.&lt;/li&gt;
+&lt;li&gt;
+		&lt;strong&gt;JavaScript Debugger&lt;/strong&gt; lets you find and fix bugs in your JavaScript right inside your Eclipse IDE.&lt;/li&gt;
+&lt;li&gt;
+		&lt;strong&gt;CodeLive w/Live Preview&lt;/strong&gt; lets you see changes inside Firefox, Chrome, Edge and Safari simultaneously while you change HTML, CSS and JSP files!&lt;/li&gt;
+&lt;li&gt;
+		&lt;strong&gt;Emmet&lt;/strong&gt; lets you type short css-like expressions to expand rich blocks in HTML and CSS.&lt;/li&gt;
+&lt;li&gt;
+		&lt;strong&gt;Slack Code Sharing&lt;/strong&gt; lets you share snippets of code directly from within Eclipse to your teammates.&lt;/li&gt;
+&lt;li&gt;
+		&lt;strong&gt;Breadcrumb&lt;/strong&gt; toolbar simplifies navigation to related elements in your workspace right next to your active editor.&lt;/li&gt;
+&lt;li&gt;
+		Not to mention other power-ups like the &lt;strong&gt;Minimap&lt;/strong&gt; and the &lt;strong&gt;Project Explorer+&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;
+		Stay tuned. We have exciting updates coming frequently!&lt;/li&gt;
+&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Mon, 27 Jul 2015 13:32:00 +0000</pubDate>
+ <dc:creator>twebbcke</dc:creator>
+ <guid isPermaLink="false">2456312 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/webclipse#comments</comments>
+  </item>
+  <item>
+    <title>TypeScript</title>
+    <link>http://marketplace.eclipse.org/content/typescript-0</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/ts-110x80.png&quot; width=&quot;110&quot; height=&quot;80&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Wed, 2016-09-21 18:24&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 11:31&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22Genuitec%2C%20LLC%22&quot;&gt;Genuitec, LLC&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/twebbcke/listings&quot; title=&quot;Tim Webb&quot;&gt;Tim Webb&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;p&gt;TypeScript plugin with: content assist, tsconfig.js support, real-time validation, formatting, coloring, and more. Optimized for Angular 2. Also in &lt;a href=&quot;https://genuitec.com/products/webclipse/&quot; rel=&quot;nofollow&quot;&gt;Webclipse&lt;/a&gt; - click to learn more.&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Wed, 21 Sep 2016 22:24:43 +0000</pubDate>
+ <dc:creator>twebbcke</dc:creator>
+ <guid isPermaLink="false">3083980 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/typescript-0#comments</comments>
+  </item>
+  <item>
+    <title>Angular IDE</title>
+    <link>http://marketplace.eclipse.org/content/angular-ide</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/angular.png&quot; width=&quot;110&quot; height=&quot;80&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Wed, 2016-11-09 19:04&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 11:31&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22Genuitec%2C%20LLC%22&quot;&gt;Genuitec, LLC&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/twebbcke/listings&quot; title=&quot;Tim Webb&quot;&gt;Tim Webb&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;p&gt;Now with Angular 4! Content assist, TypeScript 2.2 support, real-time validation, formatting, debugging, and more. Standalone version at &lt;a href=&quot;https://www.genuitec.com/products/angular-ide/&quot; rel=&quot;nofollow&quot;&gt;Angular IDE&lt;/a&gt;.&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Thu, 10 Nov 2016 00:04:48 +0000</pubDate>
+ <dc:creator>twebbcke</dc:creator>
+ <guid isPermaLink="false">3157661 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/angular-ide#comments</comments>
+  </item>
+  <item>
+    <title>Vorto Toolset</title>
+    <link>http://marketplace.eclipse.org/content/vorto-toolset</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/Vorto_logo.png&quot; width=&quot;110&quot; height=&quot;52&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Sun, 2015-11-08 20:08&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 10:40&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22Bosch%20Software%20Innovations%22&quot;&gt;Bosch Software Innovations&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/aedelmann/listings&quot; title=&quot;Alexander Edelmann&quot;&gt;Alexander Edelmann&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;p&gt;Vorto is an open source tool that allows to create and manage technology agnostic, abstract device descriptions, so called information models. Information models describe the attributes and the capabilities of real world devices. These information models can be managed and shared within the Vorto Information Model Repository. Code Generators for Information Models let you integrate devices into different platforms.&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Mon, 09 Nov 2015 01:08:07 +0000</pubDate>
+ <dc:creator>aedelmann</dc:creator>
+ <guid isPermaLink="false">2599731 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/vorto-toolset#comments</comments>
+  </item>
+  <item>
+    <title>JRebel for Eclipse</title>
+    <link>http://marketplace.eclipse.org/content/jrebel-eclipse</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/JRebel_EclipseMarketplace_110x80.png&quot; width=&quot;110&quot; height=&quot;80&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Tue, 2011-01-25 08:59&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 10:02&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22ZeroTurnaround%22&quot;&gt;ZeroTurnaround&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/owhite/listings&quot; title=&quot;Jevgeni Kabanov&quot;&gt;Jevgeni Kabanov&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;p&gt;JRebel is a productivity tool that allows developers to reload code changes instantly. It skips the rebuild, restart, and redeploy cycle common in Java development. JRebel enables developers to get more done in the same amount of time and stay in the flow while coding. JRebel supports a majority of real-world enterprise java stacks and is easy to install into existing development environments.&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Tue, 25 Jan 2011 13:59:21 +0000</pubDate>
+ <dc:creator>owhite</dc:creator>
+ <guid isPermaLink="false">29591 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/jrebel-eclipse#comments</comments>
+  </item>
+  <item>
+    <title>iText 7 pdfDebug</title>
+    <link>http://marketplace.eclipse.org/content/itext-7-pdfdebug</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/pdfDebugRGB2-110x80_0.png&quot; width=&quot;110&quot; height=&quot;80&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Fri, 2016-09-30 11:17&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 09:21&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22iText%20Software%22&quot;&gt;iText Software&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/avangasse/listings&quot; title=&quot;Amedee Van Gasse&quot;&gt;Amedee Van Gasse&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;h2&gt;
+	Program PDF with a crystal-clear view&lt;/h2&gt;
+&lt;h4&gt;
+	 &lt;/h4&gt;
+&lt;p&gt;While you’re making PDF files and an error occurs, tracing where the problem is located can be hard. That’s why iText has developed the pdfDebug add-on, which allows you to view your PDF file’s internal content structure, content streams and allows you to browse the document in a logical manner. It is a highly practical tool and currently the only one of its kind.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;iText 7 pdfDebug: Key advantages&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;
+&lt;p&gt;Only PDF programming debugging tool in the world&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Integrated into your own development environment&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Saves time by letting you catch and correct bugs quickly&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Reflects the internal logic and structure of your documents&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;&lt;h2&gt;
+	Integrated into your development tools&lt;/h2&gt;
+&lt;p&gt;One of pdfDebug’s most conspicuous features is that you can make it a seamless part of your integrated development environment. With a clear debugging overview, you can quickly locate and fix bugs in your content streams or data structure right at the source without requiring frustrating and time-consuming searches.&lt;/p&gt;
+&lt;h2&gt;
+	The strength of structure&lt;/h2&gt;
+&lt;p&gt;pdfDebug illuminates the advantages of creating PDFs with iText 7 – where most generic PDF tools only allow the creation of &quot;flat&quot; PDF files, iText 7 can embed rich content and metadata that makes using a debugging tool all the more rewarding. With a clear debugging overview, you can quickly locate and fix bugs in your content streams or data structure right at the source without requiring frustrating and time-consuming searches.&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Fri, 30 Sep 2016 15:17:48 +0000</pubDate>
+ <dc:creator>avangasse</dc:creator>
+ <guid isPermaLink="false">3098725 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/itext-7-pdfdebug#comments</comments>
+  </item>
+  <item>
+    <title>ABAP Favorites</title>
+    <link>http://marketplace.eclipse.org/content/abap-favorites</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/IMG_0123.PNG&quot; width=&quot;80&quot; height=&quot;80&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Sun, 2017-07-02 10:48&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 08:42&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22ABAPBlog.com%22&quot;&gt;ABAPBlog.com&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/lpegiel/listings&quot; title=&quot;Łukasz Pęgiel&quot;&gt;Łukasz Pęgiel&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;p&gt;A small plugin to create ABAP favorites list for transactions and urls.&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Sun, 02 Jul 2017 14:48:52 +0000</pubDate>
+ <dc:creator>lpegiel</dc:creator>
+ <guid isPermaLink="false">3522403 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/abap-favorites#comments</comments>
+  </item>
+  <item>
+    <title>Clean Sheet</title>
+    <link>http://marketplace.eclipse.org/content/clean-sheet</link>
+    <description>&lt;div class=&quot;field field-name-field-resource-image field-type-image field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;img class=&quot;img-responsive&quot; src=&quot;http://marketplace.eclipse.org/sites/default/files/clean-sheet-logo_0.png&quot; width=&quot;110&quot; height=&quot;80&quot; alt=&quot;&quot; /&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-created field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Created:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Fri, 2015-10-30 07:59&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;field field-name-shared-date-updated field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Date Updated:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;Thu, 2017-07-06 07:22&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;a href=&quot;/search/content/%22Code%20Affine%22&quot;&gt;Code Affine&lt;/a&gt;&lt;div class=&quot;field field-name-shared-submitted-by field-type-text field-label-inline clearfix&quot;&gt;&lt;div class=&quot;field-label&quot;&gt;Submitted by:&amp;nbsp;&lt;/div&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;a href=&quot;/user/fappelsjh/listings&quot; title=&quot;Frank Appel&quot;&gt;Frank Appel&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_start --&gt;&lt;div class=&quot;field field-name-body field-type-text-with-summary field-label-hidden&quot;&gt;&lt;div class=&quot;field-items&quot;&gt;&lt;div class=&quot;field-item even&quot;&gt;&lt;p&gt;An ergonomic theme for the Eclipse Java IDE on Windows 10 and Mac OS X.&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;
+		Attuned to lessen visual fatigue and eyestrain&lt;/li&gt;
+&lt;li&gt;
+		Presents a clean and low-glare look and feel&lt;/li&gt;
+&lt;li&gt;
+		Based on well balanced color selections&lt;/li&gt;
+&lt;li&gt;
+		Offers harmonic syntax highlighting&lt;/li&gt;
+&lt;li&gt;
+		Focused on readability&lt;/li&gt;
+&lt;/ul&gt;&lt;p&gt;See the &lt;a href=&quot;http://fappel.github.io/xiliary/clean-sheet.html&quot; rel=&quot;nofollow&quot;&gt;feature&#039;s homepage&lt;/a&gt; for more details and check out the &lt;a href=&quot;http://fappel.github.io/xiliary/clean-sheet-new-and-noteworthy.html&quot; rel=&quot;nofollow&quot;&gt;New &amp;amp; Noteworthy&lt;/a&gt; page for descriptions of the latest features. For support, bug reports, and enhancement requests, you can use the &lt;a rel=&quot;nofollow&quot;&gt;issue tracker&lt;/a&gt;. Please note, a JRE 8 or newer is required to run this software.&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;!-- google_ad_section_end --&gt;</description>
+     <pubDate>Fri, 30 Oct 2015 11:59:20 +0000</pubDate>
+ <dc:creator>fappelsjh</dc:creator>
+ <guid isPermaLink="false">2588223 at http://marketplace.eclipse.org</guid>
+ <comments>http://marketplace.eclipse.org/content/clean-sheet#comments</comments>
+  </item>
+  </channel>
+</rss>

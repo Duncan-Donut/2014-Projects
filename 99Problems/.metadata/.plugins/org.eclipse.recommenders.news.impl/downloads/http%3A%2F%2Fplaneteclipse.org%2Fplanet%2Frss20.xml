@@ -1,0 +1,763 @@
+<?xml version="1.0"?>
+<rss version="2.0">
+
+<channel>
+	<title>Planet Eclipse</title>
+	<link>http://planeteclipse.org/planet/</link>
+	<language>en</language>
+	<description>Planet Eclipse - http://planeteclipse.org/planet/</description>
+
+<item>
+	<title>typefox.io: Linking Xtext Models With EMF Models</title>
+	<guid isPermaLink="false">http://typefox.io/?p=14283</guid>
+	<link>http://typefox.io/linking-xtext-models-with-other-emf-models</link>
+	<description>&lt;div class=&quot;fusion-fullwidth fullwidth-box nonhundred-percent-fullwidth&quot; style=&quot;background-color: rgba(255,255,255,0); background-position: center center; padding-top: 20px; padding-right: 0px; padding-bottom: 20px; padding-left: 0px;&quot;&gt;&lt;div class=&quot;fusion-builder-row fusion-row &quot;&gt;&lt;div class=&quot;fusion-layout-column fusion_builder_column fusion_builder_column_1_1  fusion-one-full fusion-column-first fusion-column-last 1_1&quot; style=&quot;margin-top: 0px; margin-bottom: 20px;&quot;&gt;
+			&lt;div class=&quot;fusion-column-wrapper&quot;&gt;
+				&lt;blockquote&gt;&lt;p&gt;This article shows the necessary steps to enable cross-references between Xtext models and other EMF based models. It focusses on the linking aspects, and keeps things like the synchronization, transactions, singleton editing domains, dirty-state handling etc. aside. So for a full integration, let’s say with Sirius, this is only one part of the story.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;There are often good reasons to describe different parts of an EMF model in different notations, e.g. textual and graphical. To connect resources with different notations we can use EMF cross-references. Via the &lt;em&gt;&lt;a href=&quot;https://github.com/eclipse/xtext-core/blob/master/org.eclipse.xtext/src/org/eclipse/xtext/resource/XtextResource.java&quot;&gt;XtextResource&lt;/a&gt;&lt;/em&gt;, Xtext hides the entire process of parsing (text to EMF) and serialization (EMF to text) behind EMF’s resource API. So in theory, cross-references between Xtext and other EMF-based models should work out-of-the-box, shouldn’t they?&lt;/p&gt;
+&lt;p&gt;Unfortunately, there is one big difference: Xtext uses names to refer to an element, while EMF uses URIs. This blogpost is about how to get cross-references working anyway.&lt;/p&gt;
+&lt;h3&gt;The Example&lt;/h3&gt;
+&lt;p&gt;We’ve put an &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI&quot;&gt;example on Github&lt;/a&gt;, where we use simple &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.tree/model/Tree.ecore&quot;&gt;Ecore model for trees&lt;/a&gt; and an &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.xtree/src/io/typefox/xtextxmi/xtree/Xtree.xtext&quot;&gt;Xtext grammar&lt;/a&gt; on the same model.&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&quot;Screen Shot 2017-07-06 at 13.51.58&quot; class=&quot;alignnone size-medium wp-image-14296&quot; height=&quot;188&quot; src=&quot;http://typefox.io/wp-content/uploads/2017/07/Screen-Shot-2017-07-06-at-13.51.58-300x188.png&quot; width=&quot;300&quot; /&gt;&lt;img alt=&quot;Screen Shot 2017-07-06 at 13.55.19&quot; class=&quot;alignnone size-medium wp-image-14297&quot; height=&quot;182&quot; src=&quot;http://typefox.io/wp-content/uploads/2017/07/Screen-Shot-2017-07-06-at-13.55.19-300x182.png&quot; width=&quot;300&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;In our setup, we can define tree models either in XMI using the generated EMF tree editor (file extension &lt;em&gt;tree&lt;/em&gt;) or textually in an Xtext (file extension &lt;em&gt;xtree&lt;/em&gt;), and establish cross-references between the models of both notations. The screenshot shows an XMI-based model on the left and an Xtext-based on the right refering to each other.&lt;br /&gt;
+&lt;img alt=&quot;Cross-references between Xtext and XMI&quot; class=&quot;aligncenter wp-image-14284 size-large&quot; height=&quot;367&quot; src=&quot;http://typefox.io/wp-content/uploads/2017/07/Screen-Shot-2017-07-06-at-12.35.19-1024x367.png&quot; width=&quot;1024&quot; /&gt;&lt;/p&gt;
+&lt;h3&gt;&lt;/h3&gt;
+&lt;h3&gt;Cross-References from Xtext to XMI&lt;/h3&gt;
+&lt;p&gt;To resolve a cross-reference to an element, Xtext takes the name given in the text to look up the referred element in a &lt;em&gt;scope&lt;/em&gt;. You can think of a scope as a table of all candidates for a certain cross-reference with their name in a specific context. Scopes are usually chained, such that if the current scope does not yield a result for a given name, it asks its &lt;em&gt;parent scope&lt;/em&gt; and so on. The top-most parent scope is called the &lt;em&gt;global scope&lt;/em&gt;. It provides all elements from all reachable resources that would be referable at that specific location. It is usually backed by the &lt;em&gt;Xtext index&lt;/em&gt;, which stores descriptions of all externally referable elements for each resource. The index is populated by the &lt;em&gt;Xtext builder&lt;/em&gt;, which automatically syncs the index data on file changes. This is why you should never deactivate automatic builds for an Xtext project. More information on scoping can be found in the &lt;a href=&quot;https://www.eclipse.org/Xtext/documentation/303_runtime_concepts.html#scoping&quot;&gt;Xtext documentation&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Given the above, in order to refer to XMI from Xtext we have to create index entries for the elements of the XMI-based model. This is achieved by registering a new language for the &lt;em&gt;*.tree&lt;/em&gt; resources to the Xtext infrastructure, thus providing services like indexing and name computation. In the example, we created a separate &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/tree/master/io.typefox.xtextxmi.tree.xtext&quot;&gt;plug-in project for the Xtext language registration&lt;/a&gt;. You could of course put that code in an existing plug-in as well. or you might want to put runtime and UI parts into separate plug-ins.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Implement a &lt;em&gt;&lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.tree.xtext/src/io/typefox/xtextxmi/tree/xtext/TreeRuntimeModule.xtend&quot;&gt;TreeRuntimeModule&lt;/a&gt;&lt;/em&gt; inheriting from &lt;em&gt;AbstractGenericResourceRuntimeModule&lt;/em&gt; and implement the missing methods. This class is used to configure the runtime dependency injection (DI) container for this language. If you want to override non-UI services you can do this here.&lt;br /&gt;
+In our example, we override the &lt;em&gt;IQualifiedNameProvider &lt;/em&gt;to yield fully qualified names, i.e. &lt;em&gt;Root.Child&lt;/em&gt; instead of just &lt;em&gt;Child&lt;/em&gt; in the above example to avoid name collisions.&lt;/li&gt;
+&lt;li&gt;Implement a &lt;em&gt;&lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.tree.xtext/src/io/typefox/xtextxmi/tree/xtext/ui/TreeUiModule.xtend&quot;&gt;TreeUiModule&lt;/a&gt;&lt;/em&gt; inheriting from &lt;em&gt;EmfUiModule&lt;/em&gt;. This is the DI config for all Eclipse-based services.&lt;br /&gt;
+In the example, we added an &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.tree.xtext/src/io/typefox/xtextxmi/tree/xtext/ui/TreeEditorOpener.xtend&quot;&gt;editor opener&lt;/a&gt; that opens the EMF tree editor when the user follows a reference to an XMI-defined tree element in the Xtext editor.&lt;/li&gt;
+&lt;li&gt;Implement a plug-in &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.tree.xtext/src/io/typefox/xtextxmi/tree/xtext/ui/Activator.xtend&quot;&gt;&lt;em&gt;Activator&lt;/em&gt;&lt;/a&gt; (inheriting from &lt;em&gt;AbstractUIPlugin&lt;/em&gt;) that creates the injector based on the &lt;em&gt;TreeUiModule&lt;/em&gt;, the &lt;em&gt;TreeRuntimeModule&lt;/em&gt; and the common &lt;em&gt;SharedStateModule&lt;/em&gt; on &lt;em&gt;start(). &lt;/em&gt;Make sure to register the &lt;em&gt;Activator&lt;/em&gt; in the &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.tree.xtext/META-INF/MANIFEST.MF&quot;&gt;&lt;em&gt;MANIFEST.MF&lt;/em&gt;&lt;/a&gt;.&lt;em&gt;&lt;br /&gt;
+&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;Implement an &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.tree.xtext/src/io/typefox/xtextxmi/tree/xtext/ui/TreeExecutableExtensionFactory.xtend&quot;&gt;&lt;em&gt;TreeExecutableExtensionFactory&lt;/em&gt;&lt;/a&gt; that extends &lt;em&gt;AbstractGuiceAwareExecutableExtensionFactory&lt;/em&gt; and delivers both the bundle and the injector from the &lt;em&gt;Activator&lt;/em&gt;.&lt;/li&gt;
+&lt;li&gt;In the &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.tree.xtext/plugin.xml&quot;&gt;&lt;em&gt;plugin.xml&lt;/em&gt;&lt;/a&gt;, register your language to the extension point &lt;em&gt;org.eclipse.xtext.extension_resourceServiceProvider&lt;/em&gt; with the &lt;em&gt;uriExtension tree&lt;/em&gt; and an instance of &lt;em&gt;EmfResourceUIServiceProvider&lt;/em&gt; created via the &lt;em&gt;TreeExecutableExtensionFactory&lt;/em&gt; from the previous step.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;You could skip step 2 to 5 if you don’t need Eclipse support. If you want to have the same functionality in a plain Java process, you have to manually create the injector and initialize the EMF registries, as we did in the &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.tree.xtext/src/io/typefox/xtextxmi/tree/xtext/TreeStandaloneSetup.xtend&quot;&gt;&lt;em&gt;TreeStandaloneSetup&lt;/em&gt;&lt;/a&gt;.&lt;/p&gt;
+&lt;h3&gt;Cross-References from XMI to Xtext&lt;/h3&gt;
+&lt;p&gt;As opposed to names in Xtext, EMF uses &lt;em&gt;URIs&lt;/em&gt; to refer to elements. In XMI, the standard serialization format for EMF models, a cross-ref becomes an &lt;em&gt;href&lt;/em&gt; with the URI of the referred element. The URI consists of the URI of the resource where the element is defined in, followed by the fragment which is a resource unique string identifier of the element, e.g.&lt;/p&gt;&lt;pre class=&quot;crayon-plain-tag&quot;&gt;href=&quot;MyXtextTree.xtree#//@children.1&quot;&lt;/pre&gt;&lt;p&gt;
+The &lt;em&gt;XtextResource&lt;/em&gt; delivers such URIs for all contained elements by default. These URIs are picked up by referring XMI resources, so it seems like this works out-of-the-box. But the problems begin as soon as you start modifying the referred Xtext resource.&lt;/p&gt;
+&lt;p&gt;The default algorithm for computing the fragments uses an Xpath expression, navigating the containment features from the root element by name &lt;em&gt;(children)&lt;/em&gt; and index &lt;em&gt;(1)&lt;/em&gt;. This approach delivers unique fragments for all elements in a resource without relying on a name or a unique ID attribute. The disadvantage is, that it assumes that the position of an element in the content tree is fixed. When we switch the order of &lt;em&gt;Bar&lt;/em&gt; and &lt;em&gt;Baz&lt;/em&gt; in the example, their path fragments would be switched as well, screwing up existing URI references to them.&lt;/p&gt;
+&lt;p&gt;If you want the same linking semantics as in Xtext, the fragment should encode the fully qualified name of the element. Xtext allows you to customise that by implementing your own &lt;em&gt;IFragmentProvider&lt;/em&gt;. In the example, we have added our own &lt;a href=&quot;https://github.com/TypeFox/Xtext-XMI/blob/master/io.typefox.xtextxmi.xtree/src/io/typefox/xtextxmi/xtree/resource/XtreeFragmentProvider.xtend&quot;&gt;&lt;em&gt;XtreeFragmentProvider&lt;/em&gt;&lt;/a&gt; and bound it in the &lt;em&gt;XtreeRuntimeModule&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Additionally we might want to include the element’s &lt;em&gt;EClass&lt;/em&gt;, because elements of different types in the same model could have the same name. Then, there can be multiple &lt;em&gt;EClasses&lt;/em&gt; in different &lt;em&gt;EPackages&lt;/em&gt; with the same name, so a complete generic solution for the fragment would be a fully qualified &lt;em&gt;EClass&lt;/em&gt; name followed by a fully qualified element name ,  that is&lt;/p&gt;&lt;pre class=&quot;crayon-plain-tag&quot;&gt;href=&quot;[resource URI]#[EPackage nsURI][separator][EClass name][separator][EObject FQN]&quot;&lt;/pre&gt;&lt;p&gt;
+e.g&lt;/p&gt;&lt;pre class=&quot;crayon-plain-tag&quot;&gt;href=&quot; ./MyXtextTree.xtree#http://www.typefox.io/xtextxmi/tree+Node+Foo.Bar&quot;&lt;/pre&gt;&lt;p&gt;
+This is a lot of information to be packed into a string. We also must sure we don’t break encoding rules. So it may be better to go for a less general, domain-specific solution as we did in the example.&lt;/p&gt;
+&lt;p&gt;Another problem is the resource part of the URI: In Xtext, a referrer does not care in which resource the cross-referenced element is. Moving an element to a different Xtext resource would break all URI-based links to it, while the name-based links stay intact. A possible solution would be to implement a move refactoring for Xtext elements. That is beyond the scope of this article.&lt;/p&gt;
+&lt;h3&gt;A Word on Rename Refactoring&lt;/h3&gt;
+&lt;p&gt;In URI-based linking, renaming an element will not change a cross reference, as long as the fragments don’t involve the name. With our approach, the links to the Xtext resource are susceptible to such renames.&lt;/p&gt;
+&lt;p&gt;The good news is that by registering the &lt;em&gt;tree&lt;/em&gt; language to Xtext as we did above, cross-references to Xtext elements will be automatically updated when the user triggers a rename refactoring on them.&lt;/p&gt;
+&lt;p&gt;The bad news is that the links from Xtext to XMI will break when an XMI element is renamed, let’s say in the EMF tree editor. It is up to the implementor of the editor to trigger the a rename refactoring for referring Xtext resources on such user actions if that is the intended behavior. Luckily, broken links from Xtext to XMI will just be marked as errors and can be easily fixed by hand.&lt;/p&gt;
+&lt;div class=&quot;fusion-clearfix&quot;&gt;&lt;/div&gt;
+			&lt;/div&gt;
+		&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;</description>
+	<pubDate>Thu, 06 Jul 2017 12:43:39 +0000</pubDate>
+</item>
+<item>
+	<title>Frank Appel: Clean Sheet Update for Eclipse Oxygen</title>
+	<guid isPermaLink="false">https://facon-biz.prossl.de/?p=13391</guid>
+	<link>http://www.codeaffine.com/2017/07/06/clean-sheet-update-eclipse-oxygen/</link>
+	<description>&lt;p&gt;Written by &lt;a href=&quot;http://www.codeaffine.com/author/fappel/&quot; rel=&quot;nofollow&quot;&gt;Frank Appel&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;In celebration of the latest Eclipse release, there is a Clean Sheet Update for Eclipse Oxygen available. Congratulations and a big ‘thank you’ to all the diligent Eclipse committers and contributors that made the Oxygen version happen, great work! The Clean Sheet Update for Eclipse Oxygen primarily ensures compatibility but provides also a minor facelift and bug fix. The current version is 0.6.0. Note that this release drops support for Eclipse Mars (4.5).&lt;/p&gt;
+&lt;p&gt; &lt;/p&gt;
+&lt;div class=&quot;notification lock cannothide&quot;&gt;&lt;div class=&quot;boximg infoimg&quot;&gt;&lt;/div&gt;&lt;h2&gt;The Clean Sheet Eclipse Design&lt;/h2&gt;
+
+In case you've missed out on the topic and you are wondering what I'm talking about, here is a screenshot of my real world setup using the Clean Sheet theme (click on the image to enlarge).
+
+&lt;a href=&quot;http://fappel.github.io/xiliary/clean-sheet-screenshot.html&quot;&gt;&lt;img alt=&quot;Eclipse IDE Look and Feel: Clean Sheet Screenshot&quot; class=&quot;alignnone size-full wp-image-12279&quot; height=&quot;408&quot; src=&quot;http://www.codeaffine.com/wp-content/uploads/2015/11/clean-sheet-eclipse-theme.png&quot; width=&quot;850&quot; /&gt;&lt;/a&gt;
+
+For more information please refer to the features landing page at &lt;a href=&quot;http://fappel.github.io/xiliary/clean-sheet.html&quot; target=&quot;_blank&quot;&gt;http://fappel.github.io/xiliary/clean-sheet.html&lt;/a&gt;, read the introductory Clean Sheet feature description &lt;a href=&quot;http://www.codeaffine.com/2015/11/04/clean-sheet-an-ergonomic-eclipse-theme-for-windows-10/&quot;&gt;blog post&lt;/a&gt;, and check out the &lt;a href=&quot;http://fappel.github.io/xiliary/clean-sheet-new-and-noteworthy.html&quot; target=&quot;_blank&quot;&gt;New &amp;amp; Noteworthy&lt;/a&gt; page.&lt;/div&gt;
+&lt;p&gt; &lt;/p&gt;
+&lt;h2&gt;Minor Facelift of Main Toolbar&lt;/h2&gt;
+&lt;p&gt;The main toolbar has been lightened up a bit to show off the action icons to their best advantage.&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&quot;Clean Sheet Update for Eclipse Oxygen: Toolbar Facelift&quot; class=&quot;alignnone size-full wp-image-13396&quot; height=&quot;271&quot; src=&quot;http://www.codeaffine.com/wp-content/uploads/2017/07/face-lift-main-toolbar.png&quot; width=&quot;417&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;Java Editor Font Size on Mac&lt;/h2&gt;
+&lt;p&gt;The default Java editor font-size on Mac OS has been increased due to remarks that it was a bit too small with previous versions.&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&quot;Clean Sheet Update for Eclipse Oxygen: Default Font Size Mac OS&quot; class=&quot;alignnone size-full wp-image-13405&quot; height=&quot;248&quot; src=&quot;http://www.codeaffine.com/wp-content/uploads/2017/07/default-editor-font-size-mac.png&quot; width=&quot;516&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;On a Final Note, …&lt;/h2&gt;
+&lt;p&gt;Of course, it’s interesting to hear suggestions or find out about potential issues that need to be resolved. In particular, as it’s not possible to test all available features with a new IDE version. Feel free to use the &lt;a href=&quot;https://github.com/fappel/xiliary/issues&quot; target=&quot;_blank&quot;&gt;Xiliary Issue Tracker&lt;/a&gt; or the comment section below for reporting.&lt;/p&gt;
+&lt;p&gt;With this in mind, I’d like to thank all adopters for the support and hope the Clean Sheet Update for Eclipse Oxygen will continue to measure up to your expectations &lt;img alt=&quot;😉&quot; class=&quot;wp-smiley&quot; src=&quot;http://s.w.org/images/core/emoji/72x72/1f609.png&quot; style=&quot;height: 1em;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;The post &lt;a href=&quot;http://www.codeaffine.com/2017/07/06/clean-sheet-update-eclipse-oxygen/&quot; rel=&quot;nofollow&quot;&gt;Clean Sheet Update for Eclipse Oxygen&lt;/a&gt; appeared first on &lt;a href=&quot;http://www.codeaffine.com&quot; rel=&quot;nofollow&quot;&gt;Code Affine&lt;/a&gt;.&lt;/p&gt;</description>
+	<pubDate>Thu, 06 Jul 2017 12:05:44 +0000</pubDate>
+</item>
+<item>
+	<title>Mikael Barbero: Chromium / Eclipse SWT integration</title>
+	<guid isPermaLink="false">https://medium.com/p/c61f416e97d1</guid>
+	<link>https://medium.com/@mikael.barbero/chromium-eclipse-swt-integration-c61f416e97d1?source=rss-4a3bd8487ad8------2</link>
+	<description>&lt;blockquote&gt;&lt;em&gt;Key takeaways:&lt;/em&gt;&lt;/blockquote&gt;&lt;blockquote&gt;Do you want to see a Chromium based SWT Browser implementation? &lt;a href=&quot;https://www.eclipse.org/donate/&quot;&gt;&lt;strong&gt;Please donate&lt;/strong&gt;&lt;/a&gt; (or &lt;a href=&quot;mailto:mikael.barbero@eclipse-foundation.org&quot;&gt;reach out to me if you want to do corporate donations&lt;/a&gt;) and the Eclipse Foundation will &lt;a href=&quot;https://docs.google.com/document/d/1xpLxquAZd6SGDK7XvYHoj2g_PBnnBX8SFhgwIJPv7lg/edit&quot;&gt;&lt;strong&gt;make it happens&lt;/strong&gt;&lt;/a&gt; via the &lt;a href=&quot;https://www.eclipse.org/contribute/dev_program.php&quot;&gt;Friends of Eclipse Enhancement Program (FEEP)&lt;/a&gt;.&lt;/blockquote&gt;&lt;p&gt;Browser support in SWT has always been a complicated story. By default (meaning without any hint from the application developers and the users), SWT relies on “native” renderers (Internet Explorer on Windows, WebKit on macOS and WebKitGTK+ or Mozilla/XULRunner on Linux). While supporting different rendering of pages in the Web is common, it’s annoying when you develop a desktop application where the Browser component is used to render things that Web technologies can do better than SWT (CSS, SVG, WebGL, etc.). Not only that, but you would expect high performance from the renderer for such usage.&lt;/p&gt;&lt;p&gt;To mitigate these discrepancies, developers can provide some hints to the SWT framework about which renderer (WebKit or Mozilla/XULRunner) it should use. Unfortunately, XULRunner is deprecated and is no longer &lt;a href=&quot;https://groups.google.com/forum/?_escaped_fragment_=msg/mozilla.dev.platform/_rFMunG2Bgw/C-4PcHj9IgAJ#!msg/mozilla.dev.platform/_rFMunG2Bgw/C-4PcHj9IgAJ&quot;&gt;built/shipped by the Mozilla team&lt;/a&gt;. WebKit is staying, but it brings its own couple of issues when one tries to use it on all platforms:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;On Windows, it requires users to have Safari installed. As you may know, &lt;a href=&quot;http://appleinsider.com/articles/12/07/25/apple_kills_windows_pc_support_in_safari_60&quot;&gt;Apple has silently killed Safari on Windows&lt;/a&gt; back in 2012. Moreover, Safari was only available on 32 bits Windows systems. All in all, you don’t really have a choice: you need to rely on the Internet Explorer renderer when using Windows.&lt;/li&gt;&lt;li&gt;On Linux, it can be difficult to setup a proper working combination of WebKitGTK and GTK+. It is especially true for older Eclipse versions on Linux distros which change GTK+ internals (hello Ubuntu!).&lt;/li&gt;&lt;li&gt;On macOS, it just works™, as expected (it would have been a surprise where the system renderer is WebKit itself).&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;For more details on the compatibility of all platforms, you should read the &lt;a href=&quot;https://www.eclipse.org/swt/faq.php#whatisbrowser&quot;&gt;Browser section of the SWT FAQ&lt;/a&gt;).&lt;/p&gt;&lt;p&gt;One solution that has been studied further is implementing the SWT Browser widget on top of the JavaFX browser component (WebView). Unfortunately, it has some compatibility issues with GTK+ versions. Furthermore, &lt;a href=&quot;https://stackoverflow.com/a/10763261&quot;&gt;it is reported to be slow&lt;/a&gt; and to &lt;a href=&quot;https://stackoverflow.com/a/38860579&quot;&gt;have trouble rendering modern HTML pages&lt;/a&gt; due to the usage of an old version of WebKitGTK.&lt;/p&gt;&lt;p&gt;So &lt;a href=&quot;https://bugs.eclipse.org/bugs/show_bug.cgi?id=405031&quot;&gt;here comes the idea&lt;/a&gt; to embed &lt;a href=&quot;https://www.chromium.org&quot;&gt;Chromium&lt;/a&gt; (the open source project behind the Google Chrome browser). It is available on all major platforms (Windows, Linux and macOS), it is known for its high performance and high quality rendering. On top of that, most of the Chromium packaging for embedding is done by the &lt;a href=&quot;https://bitbucket.org/chromiumembedded/cef&quot;&gt;Chromium Embedded Framework (CEF)&lt;/a&gt;. CEF is quite successful and is used by some famous applications like &lt;a href=&quot;https://spotify.com&quot;&gt;Spotify&lt;/a&gt;, &lt;a href=&quot;http://store.steampowered.com&quot;&gt;Steam Client&lt;/a&gt; and &lt;a href=&quot;http://evernote.com&quot;&gt;Evernote&lt;/a&gt;. It is also the foundation of the &lt;a href=&quot;https://electron.atom.io&quot;&gt;Electron project&lt;/a&gt; (extracted from the text editor Atom). It is so successful and widespread that the Mozilla Foundation’s new renderer (&lt;a href=&quot;https://servo.org&quot;&gt;Servo&lt;/a&gt;/&lt;a href=&quot;https://wiki.mozilla.org/Quantum&quot;&gt;Quantum&lt;/a&gt;) &lt;a href=&quot;https://blogs.s-osg.org/servo-the-embeddable-browser-engine/&quot;&gt;has adopted the CEF API for developers to embed it&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;There have been several attempts to bring CEF to Java and SWT, but none were really successful. The &lt;a href=&quot;https://www.eclipse.org/org/&quot;&gt;Eclipse Foundation&lt;/a&gt; has been looking for talented developers to take over these efforts and to make it happen. Thanks to the &lt;a href=&quot;https://www.eclipse.org/contribute/dev_program.php&quot;&gt;Friends of Eclipse Enhancement Program&lt;/a&gt;, a &lt;a href=&quot;https://projects.eclipse.org/development_effort/implement-swtchromium-integration&quot;&gt;call for bidding has been created&lt;/a&gt; in early 2017. The awesome people from &lt;a href=&quot;http://www.wemaketechnology.com&quot;&gt;Make Technology&lt;/a&gt; have replied to it and demonstrated that they have the skills to do it. They already have a working prototype in the following GitHub repositories:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/maketechnology/cefswt&quot;&gt;https://github.com/maketechnology/cefswt&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/maketechnology/cefrust&quot;&gt;https://github.com/maketechnology/cefrust&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;They also have a rock &lt;a href=&quot;https://docs.google.com/document/d/1xpLxquAZd6SGDK7XvYHoj2g_PBnnBX8SFhgwIJPv7lg/edit?usp=sharing&quot;&gt;solid plan&lt;/a&gt; and they have created umbrella bugs for each milestone of this work:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=&quot;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516849&quot;&gt;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516849&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=&quot;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516850&quot;&gt;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516850&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=&quot;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516852&quot;&gt;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516852&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=&quot;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516853&quot;&gt;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516853&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=&quot;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516854&quot;&gt;https://bugs.eclipse.org/bugs/show_bug.cgi?id=516854&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;This requires an enormous amount of work and unfortunately, we did not receive enough donations this year to fund the project. &lt;strong&gt;If you want to see this work happen for the Eclipse Platform, &lt;/strong&gt;&lt;a href=&quot;https://www.eclipse.org/donate/&quot;&gt;&lt;strong&gt;please donate&lt;/strong&gt;&lt;/a&gt;&lt;strong&gt; or &lt;/strong&gt;&lt;a href=&quot;mailto:mikael.barbero@eclipse-foundation.org&quot;&gt;&lt;strong&gt;reach out to me if you want to do corporate donations&lt;/strong&gt;&lt;/a&gt;&lt;strong&gt;, &lt;/strong&gt;or to learn more about corporate donations.&lt;/p&gt;&lt;img height=&quot;1&quot; src=&quot;https://medium.com/_/stat?event=post.clientViewed&amp;amp;referrerSource=full_rss&amp;amp;postId=c61f416e97d1&quot; width=&quot;1&quot; /&gt;</description>
+	<pubDate>Tue, 04 Jul 2017 14:27:01 +0000</pubDate>
+</item>
+<item>
+	<title>vert.x project: OpenAPI (fka Swagger) 3 support in Eclipse Vert.x now in test stage!</title>
+	<guid isPermaLink="true">http://vertx.io/blog/openapi-fka-swagger-3-support-in-eclipse-vert-x-now-in-test-stage</guid>
+	<link>http://vertx.io/blog/openapi-fka-swagger-3-support-in-eclipse-vert-x-now-in-test-stage</link>
+	<description>&lt;article&gt;&lt;p&gt;As GSoC 2017’s student, I’m actually working on an embedded support to OpenAPI 3 standard inside Eclipse Vert.x framework. Now, after a lot of work, you can try it!&lt;/p&gt;
+&lt;h2 id=&quot;why-openapi-3-&quot;&gt;Why OpenAPI 3?&lt;/h2&gt;
+&lt;p&gt;OpenAPI 2 is the most important industry-grade standard for API Specifications. As you can see on &lt;a href=&quot;https://www.openapis.org/blog/2017/05/25/the-open-api-initiative-is-sending-you-a-save-the-date-card?utm_source=Blog&amp;amp;utm_medium=Twitter&amp;amp;utm_campaign=SaveTheDate&quot;&gt;official blog of OpenAPI Initiative&lt;/a&gt;, the release of version 3 is behind the corner, so we want to give to our community the latest tools for the latest standards!&lt;/p&gt;
+&lt;p&gt;Vert.x project objective is to give you more integrated tools. With this new support, it gives you the ability to use the &lt;a href=&quot;https://swaggerhub.com/blog/api-design/design-first-or-code-first-api-development/&quot;&gt;Design Driven&lt;/a&gt; (or Design First) approach &lt;strong&gt;without loading any thirds parties libraries&lt;/strong&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;features&quot;&gt;Features&lt;/h2&gt;
+&lt;p&gt;The actually supported features are the following (we refeer to document Version 3.0.0-rc2):&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;OpenAPI 3 compliant API specification validation (thanks to &lt;a href=&quot;https://github.com/RepreZen/KaiZen-OpenApi-Parser&quot;&gt;Kaizen-OpenApi-Parser&lt;/a&gt;) with &lt;strong&gt;loading of external Json schemas&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;Automatic request validation&lt;/li&gt;
+&lt;li&gt;Automatic mount of security validation handlers&lt;/li&gt;
+&lt;li&gt;Automatic 501 response for not implemented operations&lt;/li&gt;
+&lt;li&gt;Router factory to provide all this features to users&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Automatic request validation is provided by a new handler: &lt;code&gt;ValidationHandler&lt;/code&gt;. You can also define your own &lt;code&gt;ValidationHandler&lt;/code&gt; without API specifications, but I will discuss it later.&lt;/p&gt;
+&lt;p&gt;The request validation (provided by subclass &lt;code&gt;OpenAPI3RequestValidationHandler&lt;/code&gt;) actually supports:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Parameters defined in &lt;a href=&quot;https://github.com/OAI/OpenAPI-Specification/blob/OpenAPI.next/versions/3.0.md#parameter-object&quot;&gt;Parameter object&lt;/a&gt;. We support every type of parameter, including &lt;code&gt;object&lt;/code&gt; and &lt;code&gt;array&lt;/code&gt;. We also support every type description field (for example &lt;code&gt;format&lt;/code&gt;, &lt;code&gt;minimum&lt;/code&gt;, &lt;code&gt;maximum&lt;/code&gt;, etc). Also, at the moment, we support every combination of &lt;code&gt;style&lt;/code&gt; and &lt;code&gt;explode&lt;/code&gt; field (excluded styles &lt;code&gt;matrix&lt;/code&gt; and &lt;code&gt;label&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;Body defined in new &lt;a href=&quot;https://github.com/OAI/OpenAPI-Specification/blob/OpenAPI.next/versions/3.0.md#request-body-object&quot;&gt;RequestBody object&lt;/a&gt;. In particular:&lt;ul&gt;
+&lt;li&gt;For &lt;code&gt;application/json&lt;/code&gt; the validation handler will take schema that you have defined in &lt;code&gt;schema&lt;/code&gt; object and will validate json bodies with it&lt;/li&gt;
+&lt;li&gt;For &lt;code&gt;application/x-www-form-urlencoded&lt;/code&gt; and &lt;code&gt;multipart/form-data&lt;/code&gt; the validation handler will take care of validate every parameters in form attributes. It actually supports only comma separated values for &lt;code&gt;object&lt;/code&gt; and &lt;code&gt;arrays&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;For other parameter types it will check &lt;code&gt;Content-Type&lt;/code&gt; header&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Request validation errors will be carried with &lt;code&gt;RoutingContext&lt;/code&gt; encapsulated in an object called &lt;code&gt;ValidationHandler&lt;/code&gt;, so you have to attach failure handler to check if something went wrong during validation. Also the &lt;code&gt;RoutingContext&lt;/code&gt; carry a new object called &lt;code&gt;RequestParameters&lt;/code&gt; that encapsulate all request parameters deserialized and parsed.&lt;/p&gt;
+&lt;p&gt;Router factory is intended to give you a really simple user interface to use OpenAPI 3 support. Most important features are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Async loading of specification and its schema dependencies&lt;/li&gt;
+&lt;li&gt;Automatic convert OpenAPI style paths to Vert.x style paths&lt;/li&gt;
+&lt;li&gt;Lazy methods: operations (combination of paths and HTTP methods) are mounted in definition order inside specification&lt;/li&gt;
+&lt;li&gt;Automatic mount of security validation handlers&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also, it’s planned to release a &lt;strong&gt;project skeleton generator&lt;/strong&gt; based on API spec.&lt;/p&gt;
+&lt;h2 id=&quot;startup-your-project&quot;&gt;Startup your project&lt;/h2&gt;
+&lt;p&gt;We are in a testing stage, so the vertx-web official repo doesn’t contain it. To include the modified version of vertx-web replace your vertx-web maven dependency with this one:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs xml&quot;&gt;&lt;span class=&quot;hljs-tag&quot;&gt;&amp;lt;&lt;span class=&quot;hljs-title&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;hljs-tag&quot;&gt;&amp;lt;&lt;span class=&quot;hljs-title&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;com.github.slinkydeveloper&lt;span class=&quot;hljs-tag&quot;&gt;&lt;span class=&quot;hljs-title&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;hljs-tag&quot;&gt;&amp;lt;&lt;span class=&quot;hljs-title&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;vertx-web&lt;span class=&quot;hljs-tag&quot;&gt;&lt;span class=&quot;hljs-title&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;hljs-tag&quot;&gt;&amp;lt;&lt;span class=&quot;hljs-title&quot;&gt;version&lt;/span&gt;&amp;gt;&lt;/span&gt;89d6254d50&lt;span class=&quot;hljs-tag&quot;&gt;&lt;span class=&quot;hljs-title&quot;&gt;version&lt;/span&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;hljs-comment&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;hljs-tag&quot;&gt;&lt;span class=&quot;hljs-title&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+Then you have to add this maven repository in your `pom.xml`
+&lt;pre&gt;&lt;code class=&quot;hljs xml&quot;&gt;&lt;span class=&quot;hljs-tag&quot;&gt;&amp;lt;&lt;span class=&quot;hljs-title&quot;&gt;repositories&lt;/span&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;hljs-tag&quot;&gt;&amp;lt;&lt;span class=&quot;hljs-title&quot;&gt;repository&lt;/span&gt;&amp;gt;&lt;/span&gt;
+      &lt;span class=&quot;hljs-tag&quot;&gt;&amp;lt;&lt;span class=&quot;hljs-title&quot;&gt;id&lt;/span&gt;&amp;gt;&lt;/span&gt;jitpack.io&lt;span class=&quot;hljs-tag&quot;&gt;&lt;span class=&quot;hljs-title&quot;&gt;id&lt;/span&gt;&amp;gt;&lt;/span&gt;
+      &lt;span class=&quot;hljs-tag&quot;&gt;&amp;lt;&lt;span class=&quot;hljs-title&quot;&gt;url&lt;/span&gt;&amp;gt;&lt;/span&gt;https://jitpack.io&lt;span class=&quot;hljs-tag&quot;&gt;&lt;span class=&quot;hljs-title&quot;&gt;url&lt;/span&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;hljs-tag&quot;&gt;&lt;span class=&quot;hljs-title&quot;&gt;repository&lt;/span&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;hljs-tag&quot;&gt;&lt;span class=&quot;hljs-title&quot;&gt;repositories&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You can also use it with &lt;a href=&quot;https://jitpack.io/#slinkydeveloper/vertx-web/designdriven-SNAPSHOT&quot;&gt;gradle&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Now you can start using OpenAPI 3 inside your Vert.x powered app!&lt;/p&gt;
+&lt;p&gt;First of all you need to load the specification and construct the router factory:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;&lt;span class=&quot;hljs-comment&quot;&gt;// Load the api spec. This operation is asynchronous&lt;/span&gt;
+OpenAPI3RouterFactory.createRouterFactoryFromFile(&lt;span class=&quot;hljs-keyword&quot;&gt;this&lt;/span&gt;.vertx, &lt;span class=&quot;hljs-string&quot;&gt;&quot;src/main/resources/petstore.yaml&quot;&lt;/span&gt;, ar -&amp;gt; {
+    &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (ar.succeeded()) {
+        &lt;span class=&quot;hljs-comment&quot;&gt;// Spec loaded with success&lt;/span&gt;
+        OpenAPI3RouterFactory routerFactory = ar.result();
+    } &lt;span class=&quot;hljs-keyword&quot;&gt;else&lt;/span&gt; {
+        &lt;span class=&quot;hljs-comment&quot;&gt;// Something went wrong during router factory initialization&lt;/span&gt;
+        Throwable exception = ar.cause();
+        logger.error(&lt;span class=&quot;hljs-string&quot;&gt;&quot;Ops!&quot;&lt;/span&gt;, exception);
+    }
+});&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;handlers-mounting&quot;&gt;Handlers mounting&lt;/h2&gt;
+&lt;p&gt;Now load your first path. There are two functions to load the handlers:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;addHandler(HttpMethod method, String path, Handler handler, Handler failureHandler)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;addHandlerByOperationId(String operationId, Handler handler, Handler failureHandler)&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This two functions wants an handler and a failure handler. You can, of course, &lt;strong&gt;add multiple handlers to same operation&lt;/strong&gt;, without overwrite the existing ones.&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class=&quot;admonition-block important&quot;&gt;&lt;table&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td class=&quot;admonition-icon&quot;&gt;&lt;i class=&quot;admonition-icon fa fa-exclamation-circle&quot;&gt;&lt;/i&gt;&lt;/td&gt;&lt;td class=&quot;content&quot;&gt;&lt;span class=&quot;title&quot;&gt;Add operations with operationId &lt;/span&gt;&lt;br /&gt;&lt;span class=&quot;content&quot;&gt; Usage of combination of path and HTTP method is allowed, but it’s better to add operations handlers with operationId, for performance reasons and to avoid paths nomenclature errors&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;This is an example of &lt;code&gt;addHandlerByOperationId()&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;&lt;span class=&quot;hljs-comment&quot;&gt;// Add an handler with operationId&lt;/span&gt;
+routerFactory.addHandlerByOperationId(&lt;span class=&quot;hljs-string&quot;&gt;&quot;listPets&quot;&lt;/span&gt;, routingContext -&amp;gt; {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// Handle listPets operation (GET /pets)&lt;/span&gt;
+}, routingContext -&amp;gt; {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// Handle failure&lt;/span&gt;
+});&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This is an example of &lt;code&gt;addHandler&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;&lt;span class=&quot;hljs-comment&quot;&gt;// Add an handler with a combination of HttpMethod and path&lt;/span&gt;
+routerFactory.addHandler(HttpMethod.POST, &lt;span class=&quot;hljs-string&quot;&gt;&quot;/pets&quot;&lt;/span&gt;, routingContext -&amp;gt; {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// Handle /pets POST operation&lt;/span&gt;
+}, routingContext -&amp;gt; {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// Handle failure&lt;/span&gt;
+});&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;request-parameters&quot;&gt;Request parameters&lt;/h2&gt;
+&lt;p&gt;Now you can freely use request parameters. To get the &lt;code&gt;RequestParameters&lt;/code&gt; object:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;RequestParameters params = routingContext.get(&lt;span class=&quot;hljs-string&quot;&gt;&quot;parsedParameters&quot;&lt;/span&gt;);&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The &lt;code&gt;RequestParameters&lt;/code&gt; object provides all methods to access to query, cookie, header, path, form and entire body parameters. Here are some examples of how to use this object.&lt;/p&gt;
+&lt;p&gt;Parameter with name &lt;code&gt;awesomeParameter&lt;/code&gt; with type &lt;code&gt;integer&lt;/code&gt; in &lt;code&gt;query&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;RequestParameter awesomeParameter = params.queryParameter(&lt;span class=&quot;hljs-string&quot;&gt;&quot;awesomeParameter&quot;&lt;/span&gt;);
+&lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (awesomeParameter != &lt;span class=&quot;hljs-keyword&quot;&gt;null&lt;/span&gt;) {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// awesomeParameter parameter exists, but we are not sure that is empty or not (query parameters can be empty with allowEmptyValue: true)&lt;/span&gt;
+    &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (!awesomeParameter.isEmpty()) {
+      &lt;span class=&quot;hljs-comment&quot;&gt;// Now we are sure that it exists and it's not empty, so we can extract it&lt;/span&gt;
+      Integer awesome = awesomeParameter.getInteger();
+    } &lt;span class=&quot;hljs-keyword&quot;&gt;else&lt;/span&gt; {
+      &lt;span class=&quot;hljs-comment&quot;&gt;// Parameter exists, but it's empty value&lt;/span&gt;
+    }
+} &lt;span class=&quot;hljs-keyword&quot;&gt;else&lt;/span&gt; {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// Parameter doesn't exist (it's not required)&lt;/span&gt;
+}&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;As you can see, every parameter is mapped in respective objects (&lt;code&gt;integer&lt;/code&gt; in &lt;code&gt;Integer&lt;/code&gt;, &lt;code&gt;integer&lt;/code&gt; with &lt;code&gt;format: int64&lt;/code&gt; in &lt;code&gt;Long&lt;/code&gt;, &lt;code&gt;float&lt;/code&gt; in &lt;code&gt;Float&lt;/code&gt; and so on)&lt;/p&gt;
+&lt;p&gt;Comma separated array with name &lt;code&gt;awesomeParameters&lt;/code&gt; with type &lt;code&gt;integer&lt;/code&gt; in &lt;code&gt;query&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;RequestParameter awesomeParameters = params.queryParameter(&lt;span class=&quot;hljs-string&quot;&gt;&quot;awesomeParameters&quot;&lt;/span&gt;);
+&lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (awesomeParameters != &lt;span class=&quot;hljs-keyword&quot;&gt;null&lt;/span&gt; &amp;amp;&amp;amp; !awesomeParameters.isEmpty()) {
+    List awesomeList = awesomeParameters.getArray();
+    &lt;span class=&quot;hljs-keyword&quot;&gt;for&lt;/span&gt; (RequestParameter awesome : awesomeList) {
+      Integer a = awesome.getInteger();
+    }
+} &lt;span class=&quot;hljs-keyword&quot;&gt;else&lt;/span&gt; {
+  &lt;span class=&quot;hljs-comment&quot;&gt;// awesomeParameters not found or empty string&lt;/span&gt;
+}&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JSON Body:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;RequestParameter body = params.body();
+&lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (body != &lt;span class=&quot;hljs-keyword&quot;&gt;null&lt;/span&gt;)
+  JsonObject jsonBody = body.getJsonObject();&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;security-handling&quot;&gt;Security handling&lt;/h2&gt;
+&lt;p&gt;You can mount only one security handler for a combination of schema and scope.&lt;/p&gt;
+&lt;p&gt;To add a security handler only with a schema name:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;routerFactory.addSecurityHandler(&lt;span class=&quot;hljs-string&quot;&gt;&quot;security_scheme_name&quot;&lt;/span&gt;, routingContext -&amp;gt; {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// Handle security here and then call next()&lt;/span&gt;
+    routingContext.next();
+});&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To add a security handler with a combination of schema name and scope:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;routerFactory.addSecuritySchemaScopeValidator(&lt;span class=&quot;hljs-string&quot;&gt;&quot;security_scheme_name&quot;&lt;/span&gt;, &lt;span class=&quot;hljs-string&quot;&gt;&quot;scope_name&quot;&lt;/span&gt;, routingContext -&amp;gt; {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// Handle security here and then call next()&lt;/span&gt;
+    routingContext.next();
+});&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;/p&gt;&lt;div class=&quot;admonition-block note&quot;&gt;&lt;table&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td class=&quot;admonition-icon&quot;&gt;&lt;i class=&quot;admonition-icon fa fa-comment&quot;&gt;&lt;/i&gt;&lt;/td&gt;&lt;td class=&quot;content&quot;&gt;&lt;span class=&quot;title&quot;&gt;You can define security handlers where you want but define it! &lt;/span&gt;&lt;br /&gt;&lt;span class=&quot;content&quot;&gt; During Router instantiation, if factory finds a path that require a security schema without an assigned handler, It will throw a &lt;code&gt;RouterFactoryException&lt;/code&gt; &lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;h2 id=&quot;error-handling&quot;&gt;Error handling&lt;/h2&gt;
+&lt;p&gt;Every time you add an handler for an operation you can add a failure handler. To handle a &lt;code&gt;ValidationException&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;Throwable failure = routingContext.failure();
+&lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (failure &lt;span class=&quot;hljs-keyword&quot;&gt;instanceof&lt;/span&gt; ValidationException)
+    &lt;span class=&quot;hljs-comment&quot;&gt;// Handle Validation Exception&lt;/span&gt;
+    routingContext.response().setStatusCode(&lt;span class=&quot;hljs-number&quot;&gt;400&lt;/span&gt;).setStatusMessage(&lt;span class=&quot;hljs-string&quot;&gt;&quot;ValidationError&quot;&lt;/span&gt;).end(failure.getMessage());&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Also the router factory provides two other tools:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;It automatically mounts a 501 &lt;code&gt;Not Implemented&lt;/code&gt; handler for operations where you haven’t mounted any handler&lt;/li&gt;
+&lt;li&gt;It can load a default &lt;code&gt;ValidationException&lt;/code&gt; failure handler (You can enable this feature via &lt;code&gt;routerFactory.enableValidationFailureHandler(true)&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;and-now-use-it-&quot;&gt;And now use it!&lt;/h2&gt;
+&lt;p&gt;Now you are ready to generate the &lt;code&gt;Router&lt;/code&gt;!&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;hljs java&quot;&gt;Router router = routerFactory.getRouter();
+
+&lt;span class=&quot;hljs-comment&quot;&gt;// Now you can use your Router instance&lt;/span&gt;
+HttpServer server = vertx.createHttpServer(&lt;span class=&quot;hljs-keyword&quot;&gt;new&lt;/span&gt; HttpServerOptions().setPort(&lt;span class=&quot;hljs-number&quot;&gt;8080&lt;/span&gt;).setHost(&lt;span class=&quot;hljs-string&quot;&gt;&quot;localhost&quot;&lt;/span&gt;));
+server.requestHandler(router::accept).listen();&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;/p&gt;&lt;div class=&quot;admonition-block note&quot;&gt;&lt;table&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td class=&quot;admonition-icon&quot;&gt;&lt;i class=&quot;admonition-icon fa fa-comment&quot;&gt;&lt;/i&gt;&lt;/td&gt;&lt;td class=&quot;content&quot;&gt;&lt;span class=&quot;title&quot;&gt;Lazy methods! &lt;/span&gt;&lt;br /&gt;&lt;span class=&quot;content&quot;&gt; &lt;code&gt;getRouter()&lt;/code&gt; generate the &lt;code&gt;Router&lt;/code&gt; object, so you don’t have to care about code definition order&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;h2 id=&quot;and-now-&quot;&gt;And now?&lt;/h2&gt;
+&lt;p&gt;You can find a complete example here: &lt;a href=&quot;https://gist.github.com/slinkydeveloper/bdf5929c2506988d78fc08205089409a&quot;&gt;OpenAPI 3 Vert.x example gists&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;You can access to documentation (WIP) &lt;a href=&quot;https://github.com/slinkydeveloper/vertx-web/blob/designdriven/vertx-web/src/main/asciidoc/java/index.adoc#openapi-3&quot;&gt;here&lt;/a&gt; (for others languages, check out &lt;a href=&quot;https://github.com/slinkydeveloper/vertx-web/tree/designdriven/vertx-web/src/main/asciidoc&quot;&gt;here&lt;/a&gt;), but you can also check Javadoc inside code. These are the most important ones:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/slinkydeveloper/vertx-web/blob/designdriven/vertx-web/src/main/java/io/vertx/ext/web/designdriven/DesignDrivenRouterFactory.java&quot;&gt;DesignDrivenRouterFactory (Base interface of OpenAPI3RouterFactory)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/slinkydeveloper/vertx-web/blob/designdriven/vertx-web/src/main/java/io/vertx/ext/web/designdriven/OpenAPI3RouterFactory.java&quot;&gt;OpenAPI3RouterFactory&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/slinkydeveloper/vertx-web/blob/designdriven/vertx-web/src/main/java/io/vertx/ext/web/RequestParameters.java&quot;&gt;RequestParameters (container of all parameters)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/slinkydeveloper/vertx-web/blob/designdriven/vertx-web/src/main/java/io/vertx/ext/web/RequestParameter.java&quot;&gt;RequestParameter (container of a parameter instance)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/slinkydeveloper/vertx-web/blob/designdriven/vertx-web/src/main/java/io/vertx/ext/web/validation/ValidationException.java&quot;&gt;ValidationException&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Follow &lt;a href=&quot;https://github.com/slinkydeveloper/vertx-web&quot;&gt;my fork of vertx-web project&lt;/a&gt; to get last updates.&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;&lt;div class=&quot;admonition-block important&quot;&gt;&lt;table&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td class=&quot;admonition-icon&quot;&gt;&lt;i class=&quot;admonition-icon fa fa-exclamation-circle&quot;&gt;&lt;/i&gt;&lt;/td&gt;&lt;td class=&quot;content&quot;&gt;&lt;span class=&quot;title&quot;&gt;We want you! &lt;/span&gt;&lt;br /&gt;&lt;span class=&quot;content&quot;&gt; Please give us your feedback opening an issue &lt;a href=&quot;https://github.com/slinkydeveloper/vertx-web/issues&quot;&gt;here&lt;/a&gt; &lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+&lt;/article&gt;</description>
+	<pubDate>Tue, 04 Jul 2017 00:00:00 +0000</pubDate>
+</item>
+<item>
+	<title>Vladimir Piskarev: Announcing Handly 0.7</title>
+	<guid isPermaLink="false">http://pisv.wordpress.com/?p=637</guid>
+	<link>https://pisv.wordpress.com/2017/06/30/announcing-handly-0-7/</link>
+	<description>&lt;p&gt;We are pleased to announce the availability of Eclipse &lt;a href=&quot;https://eclipse.org/handly&quot;&gt;Handly&lt;/a&gt; 0.7 release, which contains a number of enhancements in Core API.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://wiki.eclipse.org/Handly/NewIn07&quot;&gt;New and Noteworthy&lt;/a&gt;&lt;br /&gt;
+&lt;a href=&quot;https://wiki.eclipse.org/Handly/Migration07&quot;&gt;Migration Guide&lt;/a&gt;&lt;br /&gt;
+&lt;a href=&quot;https://projects.eclipse.org/projects/technology.handly/downloads&quot;&gt;Downloads&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;The 0.7 release has been informed in a large part by trying to adopt Handly in a specially created &lt;a href=&quot;https://github.com/pisv/jdt.core-handly&quot;&gt;experimental fork of Eclipse Java development tools&lt;/a&gt; (JDT) to test the core framework in the context of a non-trivial, well-known existing model implementation, the Java model. The JDT Core component has a comprehensive suite of JUnit tests, including nearly 8 000 tests specifically for the Java model. All of the Java model tests, including performance tests, run successfully in the Handly-based fork now. None of the existing public JDT APIs have been affected in any way. Notably, most of the internal JDT (non-)APIs have also been kept intact. We humbly hope that it can serve as a real-world example of what Handly is capable of now and help encourage further adoption. Broader community feedback and participation would be most welcome.&lt;/p&gt;&lt;img alt=&quot;&quot; border=&quot;0&quot; height=&quot;1&quot; src=&quot;https://pixel.wp.com/b.gif?host=pisv.wordpress.com&amp;amp;blog=63898667&amp;amp;post=637&amp;amp;subd=pisv&amp;amp;ref=&amp;amp;feed=1&quot; width=&quot;1&quot; /&gt;</description>
+	<pubDate>Fri, 30 Jun 2017 19:47:13 +0000</pubDate>
+</item>
+<item>
+	<title>Orion: Announcing Orion 15</title>
+	<guid isPermaLink="false">http://planetorion.org/news/?p=890</guid>
+	<link>http://planetorion.org/news/2017/06/announcing-orion-15/</link>
+	<description>&lt;p&gt;We are pleased to announce the fifteenth release of Orion, “Your IDE in the Cloud”. You can run it now at &lt;a href=&quot;https://orionhub.org&quot;&gt;OrionHub&lt;/a&gt; or &lt;a href=&quot;http://download.eclipse.org/orion/drops/R-15.1-201706291452/index.html&quot;&gt;download the server&lt;/a&gt; to run your own instance. Once again, thank you to all committers and contributors for your hard work this release.  There were 191 bugs and enhancements fixed, across 367 commits from 18 authors!&lt;/p&gt;
+&lt;p&gt;This release was focussed on making improvements in the Node.js server and Electron app, and progressing on adding collaborative development support and debugging support directly in Orion.  Additionally, the Orion repos have now moved to github.com (&lt;a href=&quot;https://github.com/eclipse/orion.client&quot;&gt;client&lt;/a&gt; and &lt;a href=&quot;https://github.com/eclipse/orion.server&quot;&gt;server&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;The improvements in the Node.js server will see it soon replace the Java server as the preferred implementation.  The new work on adding collaborative development support and debugging support directly in Orion is not quite ready for prime time, but should officially land in Orion 16.&lt;/p&gt;</description>
+	<pubDate>Fri, 30 Jun 2017 18:04:42 +0000</pubDate>
+</item>
+<item>
+	<title>JBoss Tools Team: JBoss Tools 4.5.0.AM1 for Eclipse Oxygen.0</title>
+	<guid isPermaLink="true">https://tools.jboss.org/blog/4.5.0.am1-for-oxygen.0.html</guid>
+	<link>https://tools.jboss.org/blog/4.5.0.am1-for-oxygen.0.html</link>
+	<description>&lt;div&gt;&lt;div id=&quot;preamble&quot;&gt;
+      &lt;div class=&quot;sectionbody&quot;&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;Happy to announce 4.5.0.AM1 (Developer Milestone 1) build for Eclipse Oxygen.0.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;Downloads available at &lt;a href=&quot;https://tools.jboss.org/downloads/jbosstools/oxygen/4.5.0.AM1.html&quot;&gt;JBoss Tools 4.5.0 AM1&lt;/a&gt;.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect1&quot;&gt;
+      &lt;h2 id=&quot;what-is-new&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#what-is-new&quot;&gt;&lt;/a&gt;What is New?&lt;/h2&gt;
+      &lt;div class=&quot;sectionbody&quot;&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;Full info is at &lt;a href=&quot;https://tools.jboss.org/documentation/whatsnew/jbosstools/4.5.0.AM1.html&quot;&gt;this page&lt;/a&gt;. Some highlights are below.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect2&quot;&gt;
+      &lt;h3 id=&quot;server-tools&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#server-tools&quot;&gt;&lt;/a&gt;Server Tools&lt;/h3&gt;
+      &lt;div class=&quot;sect3&quot;&gt;
+      &lt;h4 id=&quot;eap-7-1-server-adapter&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#eap-7-1-server-adapter&quot;&gt;&lt;/a&gt;EAP 7.1 Server Adapter&lt;/h4&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;A server adapter has been added to work with EAP 7.1. It’s currently released in Tech-Preview mode only, since the underlying WildFly 11 continues to be under active development with substantial opportunity for breaking changes. This new server adapter includes support for incremental management deployment like it’s upstream WildFly 11 counterpart.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect3&quot;&gt;
+      &lt;h4 id=&quot;removal-of-event-log-and-other-deprecated-code&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#removal-of-event-log-and-other-deprecated-code&quot;&gt;&lt;/a&gt;Removal of Event Log and other Deprecated Code&lt;/h4&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;The Event Log view has been removed. The standard eclipse log is to be used for errors and other important messages regarding errors during server state transitions.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect2&quot;&gt;
+      &lt;h3 id=&quot;hibernate-tools&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#hibernate-tools&quot;&gt;&lt;/a&gt;Hibernate Tools&lt;/h3&gt;
+      &lt;div class=&quot;sect3&quot;&gt;
+      &lt;h4 id=&quot;hibernate-search-support&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#hibernate-search-support&quot;&gt;&lt;/a&gt;Hibernate Search Support&lt;/h4&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;We are glad to announce the support of the &lt;a href=&quot;http://hibernate.org/search&quot;&gt;Hibernate Search&lt;/a&gt;. The project was started by &lt;a href=&quot;https://github.com/bdshadow&quot;&gt;Dmitrii Bocharov&lt;/a&gt; in the &lt;a href=&quot;https://developers.google.com/open-source/gsoc/&quot;&gt;Google Summer Code&lt;/a&gt; program and has been successfully transferred in the current release of the JBoss Tools from &lt;a href=&quot;https://github.com/bdshadow/jbosstools-hibernate-search&quot;&gt;Dmitrii’s repository&lt;/a&gt; into the &lt;a href=&quot;https://github.com/jbosstools/jbosstools-hibernate&quot;&gt;jbosstools-hibernate repository&lt;/a&gt; and has become a part of the JBoss family of tools.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect4&quot;&gt;
+      &lt;h5 id=&quot;functionality&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#functionality&quot;&gt;&lt;/a&gt;Functionality&lt;/h5&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;The plugin was thought to be some kind of a &lt;a href=&quot;https://github.com/DmitryKey/luke&quot;&gt;Luke tool&lt;/a&gt; inside Eclipse.
+      It was thought to be more convenient than launching a separate application, and picks up the configuration directly from your Hibernate configuration.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;Two options were added to the console configurations submenu: Index Rebuild and Index Toolkit. They become available when you use hibernate search libraries (they exist in the build path of your application, e.g. via maven).&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;imageblock&quot;&gt;
+      &lt;div class=&quot;content&quot;&gt;
+      &lt;img alt=&quot;Configuration menu items&quot; src=&quot;https://tools.jboss.org/documentation/whatsnew/hibernate/images/4.5.0.AM1/jbt-hsearch-ConfigurationMenu.jpg&quot; /&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect4&quot;&gt;
+      &lt;h5 id=&quot;index-rebuild&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#index-rebuild&quot;&gt;&lt;/a&gt;Index Rebuild&lt;/h5&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;When introducing Hibernate Search in an existing application, you have to create an initial Lucene index for the data already present in your database.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;The option &quot;Index Rebuild&quot; will do so by re-creating the Lucene index in the directory specified by the &lt;code&gt;hibernate.search.default.indexBase&lt;/code&gt; property.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;imageblock&quot;&gt;
+      &lt;div class=&quot;content&quot;&gt;
+      &lt;img alt=&quot;Hibernate Search indexed entities&quot; src=&quot;https://tools.jboss.org/documentation/whatsnew/hibernate/images/4.5.0.AM1/markedIndexed.jpg&quot; /&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;imageblock&quot;&gt;
+      &lt;div class=&quot;content&quot;&gt;
+      &lt;img alt=&quot;Hibernate Search configuration properties&quot; src=&quot;https://tools.jboss.org/documentation/whatsnew/hibernate/images/4.5.0.AM1/GeneratedIndexes.jpg&quot; /&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect4&quot;&gt;
+      &lt;h5 id=&quot;index-toolkit&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#index-toolkit&quot;&gt;&lt;/a&gt;Index Toolkit&lt;/h5&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;&quot;Open Index Toolkit&quot; submenu of the console configuration opens an &quot;Index Toolkit&quot; view, which has three tabs: Analyzers, Explore Documents, Search.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect5&quot;&gt;
+      &lt;h6 id=&quot;analyzers&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#analyzers&quot;&gt;&lt;/a&gt;Analyzers&lt;/h6&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;This tab allows you to view the result of work of different Lucene Analyzers.
+      The combo-box contains all classes in the workspace which extend org.apache.lucene.analysis.Analyzer, including custom implementations created by the user. While you type the text you want to analyse, the result immediately appears on the right.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;imageblock&quot;&gt;
+      &lt;div class=&quot;content&quot;&gt;
+      &lt;img alt=&quot;Analyzers&quot; src=&quot;https://tools.jboss.org/documentation/whatsnew/hibernate/images/4.5.0.AM1/jbt-hsearch-AnalyzersToolkit.jpg&quot; /&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect5&quot;&gt;
+      &lt;h6 id=&quot;explore-documents&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#explore-documents&quot;&gt;&lt;/a&gt;Explore Documents&lt;/h6&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;After creating the initial index you can now inspect the Lucene Documents it contains.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;All entities annotated as &lt;code&gt;@Indexed&lt;/code&gt; are displayed in the Lucene Documents tab.
+      Tick the checkboxes as needed and load the documents. Iterate through the documents using arrows.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;imageblock&quot;&gt;
+      &lt;div class=&quot;content&quot;&gt;
+      &lt;img alt=&quot;Lucene Documents inspection&quot; src=&quot;https://tools.jboss.org/documentation/whatsnew/hibernate/images/4.5.0.AM1/jbt-hsearch-LuceneDocuments.jpg&quot; /&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect5&quot;&gt;
+      &lt;h6 id=&quot;searching&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#searching&quot;&gt;&lt;/a&gt;Searching&lt;/h6&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;The plugin passes the input string from the search text box to the QueryParser which parses it using the specified analyzer and creates a set of search terms, one term per token, over the specified default field. The result of the search pulls back all documents which contain the terms and lists them in a table below.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;imageblock&quot;&gt;
+      &lt;div class=&quot;content&quot;&gt;
+      &lt;img alt=&quot;Search tab&quot; src=&quot;https://tools.jboss.org/documentation/whatsnew/hibernate/images/4.5.0.AM1/jbt-hsearch-LuceneSearch.jpg&quot; /&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect3&quot;&gt;
+      &lt;h4 id=&quot;demo&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#demo&quot;&gt;&lt;/a&gt;Demo&lt;/h4&gt;
+      &lt;div class=&quot;videoblock&quot;&gt;
+      &lt;div class=&quot;content&quot;&gt;
+      
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect2&quot;&gt;
+      &lt;h3 id=&quot;docker&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#docker&quot;&gt;&lt;/a&gt;Docker&lt;/h3&gt;
+      &lt;div class=&quot;sect3&quot;&gt;
+      &lt;h4 id=&quot;docker-client-upgrade&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#docker-client-upgrade&quot;&gt;&lt;/a&gt;Docker Client Upgrade&lt;/h4&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;The version of docker-client used by the Docker Tooling plug-ins has been upgraded to 6.1.1 for the 3.0.0 release of the Docker Tooling feature.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sect2&quot;&gt;
+      &lt;h3 id=&quot;forge&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#forge&quot;&gt;&lt;/a&gt;Forge&lt;/h3&gt;
+      &lt;div class=&quot;sect3&quot;&gt;
+      &lt;h4 id=&quot;forge-runtime-updated-to-3-7-1-final&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;http://tools.jboss.org/blog/news.atom#forge-runtime-updated-to-3-7-1-final&quot;&gt;&lt;/a&gt;Forge Runtime updated to 3.7.1.Final&lt;/h4&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;The included Forge runtime is now 3.7.1.Final. Read the official announcement &lt;a href=&quot;http://forge.jboss.org/news/jboss-forge-3.7.1.final-is-here&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;imageblock&quot;&gt;
+      &lt;div class=&quot;content&quot;&gt;
+      &lt;img alt=&quot;startup&quot; src=&quot;https://tools.jboss.org/documentation/whatsnew/forge/images/4.5.0.AM1/startup.png&quot; /&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;Enjoy!&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;paragraph&quot;&gt;
+      &lt;p&gt;Jeff Maury&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;/div&gt;&lt;/div&gt;</description>
+	<pubDate>Fri, 30 Jun 2017 15:34:00 +0000</pubDate>
+</item>
+<item>
+	<title>VIATRA: VIATRA 1.6 is out with Eclipse Oxygen</title>
+	<guid isPermaLink="false">5614faafe4b03f677dc3822b:56153118e4b022593e35e24b:59560a96e6f2e1244761b955</guid>
+	<link>https://viatra.net/news/2017/6/viatra-16-is-out-with-eclipse-oxygen</link>
+	<description>&lt;p&gt;The &lt;a href=&quot;http://eclipse.org/viatra&quot; target=&quot;_blank&quot;&gt;VIATRA project&lt;/a&gt; is happy to report that release 1.6.0, included in the &lt;a href=&quot;https://www.eclipse.org/oxygen/&quot;&gt;Eclipse Oxygen Release Train&lt;/a&gt;, is now available with multiple new features and fixed bugs.&lt;/p&gt;&lt;p&gt;The most notable highlights of this VIATRA release include:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Query runtime enhancements&lt;/strong&gt; for special cases, like dangling edges and recursive patterns result in less surprises for users of the query engine.&lt;/li&gt;&lt;li&gt;&lt;strong&gt;The Getting started tutorial&lt;/strong&gt; was updated and extended from its previos version, and now is available both from &lt;a href=&quot;https://www.eclipse.org/viatra/documentation/tutorial.php&quot;&gt;the project website&lt;/a&gt; and &lt;a href=&quot;http://help.eclipse.org/oxygen/topic/org.eclipse.viatra.documentation.help/html/tutorial/intro.html?cp=102_1&quot;&gt;the Eclipse Help&lt;/a&gt; as well. The tutorial features both query and transformation development features.&lt;/li&gt;&lt;li&gt;&lt;strong&gt;The Query Test facilities&lt;/strong&gt; of VIATRA that were originally used for internal tests are now extended to use for the testing of queries as well: it is possible to evaluate the results of model queries, and calculate coverage report for them.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;For a more complete list of changes, see the dedicated &lt;a href=&quot;https://wiki.eclipse.org/VIATRA/Releases/NewAndNoteworthy1.6&quot; target=&quot;_blank&quot;&gt;New and noteworthy&lt;/a&gt; page, or have a look at the list of &lt;a href=&quot;https://projects.eclipse.org/projects/modeling.viatra/releases/1.6.0/bugs&quot; target=&quot;_blank&quot;&gt;fixed issues&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;All downloads are available now from the &lt;a href=&quot;https://www.eclipse.org/viatra/downloads.php&quot; target=&quot;_blank&quot;&gt;downloads area&lt;/a&gt; or the &lt;a href=&quot;http://marketplace.eclipse.org/content/viatra&quot; target=&quot;_blank&quot;&gt;marketplace&lt;/a&gt; and the main Oxygen update site as well.&lt;/p&gt;&lt;p&gt;Feel free to reach out on the Eclipse Forums of VIATRA or the developer mailing list if you have questions, we will not leave any unanswered. You can also request &lt;a href=&quot;http://incquerylabs.com/&quot; target=&quot;_blank&quot;&gt;industrial support&lt;/a&gt; for more advanced issues.&lt;/p&gt;</description>
+	<pubDate>Fri, 30 Jun 2017 09:20:07 +0000</pubDate>
+</item>
+<item>
+	<title>Maximilian and Jonas: EMF Forms and EMF Client Platform 1.13.0 released!</title>
+	<guid isPermaLink="false">https://eclipsesource.com/?p=34487</guid>
+	<link>https://eclipsesource.com/blogs/2017/06/29/emf-forms-and-emf-client-platform-1-13-0-released/</link>
+	<description>&lt;p&gt;We are happy to announce that together with Oxygen, we have released EMF Forms and EMF Client Platform 1.13.0! The number “13” should actually mean bad luck, however, 1.13.0 is the 14th release (starting with 1.0.0), so we are not superstitious here &lt;img alt=&quot;🙂&quot; class=&quot;wp-smiley&quot; src=&quot;https://s.w.org/images/core/emoji/2.2.1/72x72/1f642.png&quot; style=&quot;height: 1em;&quot; /&gt;&lt;br /&gt;
+We want to thank our continuously active team of 14 contributors (35 contributors over all) for completing on 43 bug reports and feature requests.&lt;br /&gt;
+It is amazing to look at the on-going histroy of this successful project, since version 1.0.0, we have completed over 1.4k feature requests and bug reports, 38 contributors have submitted 10k commits and developed 640k lines of code. EMF Forms continues to be one of the most active projects at Eclipse.&lt;/p&gt;
+&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;In case you don’t know EMF Forms: It is a framework focused on the creation of form-based UIs. EMF Client Platform is designed to support the development of applications based on an EMF data model. If you are not yet familiar with EMF Forms, please refer to this &lt;a href=&quot;https://eclipsesource.com/blogs/tutorials/getting-started-with-EMF-Forms/&quot;&gt;tutorial&lt;/a&gt; for a introduction.&lt;/p&gt;
+&lt;p&gt;We have also submitted a &lt;a href=&quot;https://www.eclipsecon.org/europe2017/session/building-form-based-uis-emf-forms-101&quot;&gt;getting started talk&lt;/a&gt; to &lt;a href=&quot;https://www.eclipsecon.org/europe2017/&quot;&gt;EclipseCon Europe 2017&lt;/a&gt;, so make sure to be there. By the way, today is the deadline for the early bird submission, so &lt;a href=&quot;https://www.eclipsecon.org/europe2017/cfp&quot;&gt;get your own talks in&lt;/a&gt; as well.&lt;/p&gt;
+&lt;p&gt;EMF Forms and EMF Client Platform are part of Eclipse Modeling Tools Oxygen, but you can also find the new release on our download pages:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.eclipse.org/ecp/download.html&quot;&gt;Download EMF Client Platform&lt;/a&gt;&lt;br /&gt;
+&lt;a href=&quot;https://www.eclipse.org/ecp/emfforms/download.html&quot;&gt;Download EMF Forms&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;As always, we will also blog about new features of the EMF Forms / ECP 1.13.0 release in the upcoming weeks! Please follow this blog or follow us on twitter to get notified about the new posts.&lt;/p&gt;</description>
+	<pubDate>Thu, 29 Jun 2017 14:46:06 +0000</pubDate>
+</item>
+<item>
+	<title>Webtools News: WTP 3.9 Released!</title>
+	<guid isPermaLink="false">http://www.eclipse.org/webtools/news.php#permalink177</guid>
+	<link>http://eclipse.org/webtools/releases/3.9.0</link>
+	<description>&lt;div&gt;
+    The Web Tools Platform's 3.9 Release is now available!  &lt;a href=&quot;https://wiki.eclipse.org/WTP_FAQ#How_do_I_install_WTP.3F&quot;&gt;Installation&lt;/a&gt; and update can be performed using the Oxygen Update Site at
+    &lt;a href=&quot;http://download.eclipse.org/releases/oxygen/&quot;&gt;http://download.eclipse.org/releases/oxygen/&lt;/a&gt;, or the &lt;a href=&quot;http://www.eclipse.org/webtools/news/#permalink175&quot;&gt;Eclipse Marketplace&lt;/a&gt;.  Release 3.9.0 &lt;a href=&quot;https://www.eclipse.org/webtools/releases/3.9.0/&quot;&gt;fixes&lt;/a&gt; issues that occur in prior releases or have been reported since 3.8.2's release.
+    WTP 3.9 is featured in the Oxygen
+        &lt;a href=&quot;http://www.eclipse.org/downloads/packages/eclipse-ide-java-ee-developers/oxygenr&quot;&gt;Eclipse IDE for Java EE Developers&lt;/a&gt; and &lt;a href=&quot;https://www.eclipse.org/downloads/packages/eclipse-ide-javascript-and-web-developers/oxygenr&quot;&gt;Eclipse IDE for JavaScript and Web Developers&lt;/a&gt;, with selected features also included in &lt;a href=&quot;http://www.eclipse.org/downloads/compare.php&quot;&gt;other packages&lt;/a&gt;.  Adopters can download &lt;a href=&quot;http://download.eclipse.org/webtools/downloads/&quot;&gt;the build itself&lt;/a&gt; directly.
+&lt;/div&gt;&lt;p&gt;&lt;a href=&quot;http://www.eclipse.org/webtools/news.php#permalink177&quot;&gt;More news&lt;/a&gt;&lt;/p&gt;</description>
+	<pubDate>Wed, 28 Jun 2017 19:00:00 +0000</pubDate>
+</item>
+<item>
+	<title>Eclipse Announcements: Eclipse Newsletter - Eclipse Oxygen</title>
+	<guid isPermaLink="true">http://feedproxy.google.com/~r/eclipse/fnews/~3/ryyT4K4eBOU/</guid>
+	<link>http://feedproxy.google.com/~r/eclipse/fnews/~3/ryyT4K4eBOU/</link>
+	<description>Find out more about the latest Eclipse Simultaneous Release in the June issue of the Eclipse Newsletter!&lt;img alt=&quot;&quot; height=&quot;1&quot; src=&quot;http://feeds.feedburner.com/~r/eclipse/fnews/~4/ryyT4K4eBOU&quot; width=&quot;1&quot; /&gt;</description>
+	<pubDate>Wed, 28 Jun 2017 14:26:00 +0000</pubDate>
+</item>
+<item>
+	<title>Eclipse Announcements: Eclipse Oxygen Now Available</title>
+	<guid isPermaLink="true">http://feedproxy.google.com/~r/eclipse/fnews/~3/sY8lMxMd61A/oxygen</guid>
+	<link>http://feedproxy.google.com/~r/eclipse/fnews/~3/sY8lMxMd61A/oxygen</link>
+	<description>We're proud to announce the arrival of Eclipse Oxygen, the 12th annual simultaneous release from the Eclipse Community. DOWNLOAD NOW!&lt;img alt=&quot;&quot; height=&quot;1&quot; src=&quot;http://feeds.feedburner.com/~r/eclipse/fnews/~4/sY8lMxMd61A&quot; width=&quot;1&quot; /&gt;</description>
+	<pubDate>Wed, 28 Jun 2017 14:05:00 +0000</pubDate>
+</item>
+<item>
+	<title>Eclipse Announcements: Eclipse Oxygen Now Available</title>
+	<guid isPermaLink="true">http://feedproxy.google.com/~r/eclipse/fnews/~3/kHM2m7vEFvQ/downloads</guid>
+	<link>http://feedproxy.google.com/~r/eclipse/fnews/~3/kHM2m7vEFvQ/downloads</link>
+	<description>We're proud to announce the arrival of Eclipse Oxygen, the 12th annual simultaneous release from the Eclipse Community. DOWNLOAD NOW!&lt;img alt=&quot;&quot; height=&quot;1&quot; src=&quot;http://feeds.feedburner.com/~r/eclipse/fnews/~4/kHM2m7vEFvQ&quot; width=&quot;1&quot; /&gt;</description>
+	<pubDate>Wed, 28 Jun 2017 14:05:00 +0000</pubDate>
+</item>
+<item>
+	<title>Holger Voormann: Eclipse Oxygen IDE Improvements: General, Java and Git</title>
+	<guid isPermaLink="false">http://eclipsehowl.wordpress.com/?p=1162</guid>
+	<link>https://eclipsehowl.wordpress.com/2017/06/28/eclipse-oxygen-ide-improvements-general-java-and-git/</link>
+	<description>&lt;p&gt;&lt;a href=&quot;https://www.eclipse.org/oxygen/&quot;&gt;Eclipse Oxygen&lt;/a&gt; has just been released! Thanks to all committers and contributors. Good job!&lt;/p&gt;
+&lt;p&gt;Watch 26 general, Java and Git IDE improvements in action:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w&quot;&gt;&lt;img alt=&quot;Eclipse Oxygen IDE Improvements: General, Java and Git&quot; class=&quot;alignnone size-full wp-image-1149&quot; height=&quot;253&quot; src=&quot;https://eclipsehowl.files.wordpress.com/2017/06/eclipse_oxygen_0_ide_improvements2.png?w=450&amp;amp;h=253&quot; width=&quot;450&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h3&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=11s&quot;&gt;General IDE&lt;/a&gt;&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=20s&quot; rel=&quot;noopener&quot;&gt;0:20&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclipse/news/4.7/platform.php#launch-groups&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Launch Group&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=1m27s&quot; rel=&quot;noopener&quot;&gt;1:27&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclipse/news/4.7/platform.php#ctrl-e-command-improvements&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Quick Switch Editor: Ctrl+E to cycle through the list&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=1m46s&quot; rel=&quot;noopener&quot;&gt;1:46&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclipse/news/4.7/platform.php#quick-access-string-matching&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Quick Access: Search with subwords and Search in Help&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=2m10s&quot; rel=&quot;noopener&quot;&gt;2:10&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclipse/news/4.7/platform.php#copy-preferences-during-ws-switch&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Switch Workspace: Copy Preferences&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=2m18s&quot; rel=&quot;noopener&quot;&gt;2:18&lt;/a&gt; &lt;a href=&quot;https://wiki.eclipse.org/Eclipse_USS&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Eclipse User Storage&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=2m46s&quot; rel=&quot;noopener&quot;&gt;2:46&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclipse/news/4.7/M4/#non-modal-p2-installation-dialog&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Non-modal Install dialog&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=3m01s&quot; rel=&quot;noopener&quot;&gt;3:01&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclipse/news/4.7/platform.php#always-run-in-background&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Always run in background&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=3m07s&quot; rel=&quot;noopener&quot;&gt;3:07&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclipse/news/4.7/platform.php#hide-show-status-bar&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Show/hide Status Bar&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=3m21s&quot; rel=&quot;noopener&quot;&gt;3:21&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclipse/news/4.7/platform.php#window-title&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Window title configuration&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=3m37s&quot; rel=&quot;noopener&quot;&gt;3:37&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclipse/news/4.7/platform.php#improved-exit-and-restart-dialog&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Verbs instead of OK/No/Yes&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=3m46s&quot; rel=&quot;noopener&quot;&gt;3:46&lt;/a&gt; &lt;a href=&quot;https://eclipse.org/eclipse/news/4.7/platform.php#generic-editor&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Generic Text Editor&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=4m4s&quot;&gt;Java&lt;/a&gt;&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=4m12s&quot; rel=&quot;noopener&quot;&gt;4:12&lt;/a&gt; &lt;a href=&quot;http://eclipse.org/eclemma&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Java code coverage analysis&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=4m46s&quot; rel=&quot;noopener&quot;&gt;4:46&lt;/a&gt; &lt;a href=&quot;http://www.eclipse.org/eclipse/news/4.7/jdt.php#show-junit-failure-trace-in-console-view&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;JUnit: Show stack trace in Console&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=4m54s&quot; rel=&quot;noopener&quot;&gt;4:54&lt;/a&gt; &lt;a href=&quot;http://www.eclipse.org/eclipse/news/4.7/jdt.php#auto-insert-braces&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Braces positioning and text escaping&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=5m30s&quot; rel=&quot;noopener&quot;&gt;5:30&lt;/a&gt; &lt;a href=&quot;http://www.eclipse.org/eclipse/news/4.7/jdt.php#skip-button-in-organize-imports-dialog&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Skip button in Organize Imports dialog&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=5m48s&quot; rel=&quot;noopener&quot;&gt;5:48&lt;/a&gt; &lt;a href=&quot;http://www.eclipse.org/eclipse/news/4.7/jdt.php#formatter&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Java Formatter: New possibility of calculating comment width&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=6m20s&quot; rel=&quot;noopener&quot;&gt;6:20&lt;/a&gt; &lt;a href=&quot;http://www.eclipse.org/eclipse/news/4.7/jdt.php#unlikely-argument-types&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Warnings for unlikely argument types&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=6m57s&quot; rel=&quot;noopener&quot;&gt;6:57&lt;/a&gt; &lt;a href=&quot;http://www.eclipse.org/eclipse/news/4.7/jdt.php#step-show-methodresult&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Variables view shows last method result&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=7m11s&quot; rel=&quot;noopener&quot;&gt;7:11&lt;/a&gt; &lt;a href=&quot;http://www.eclipse.org/eclipse/news/4.7/jdt.php#triggers-for-breakpoints&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Trigger for breakpoints&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=7m42s&quot; rel=&quot;noopener&quot;&gt;7:42&lt;/a&gt; &lt;a href=&quot;http://www.eclipse.org/eclipse/news/4.7/platform.php#breakpoints-sort-by&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Breakpoints view: Sort by Creation Time&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=7m52s&quot; rel=&quot;noopener&quot;&gt;7:52&lt;/a&gt; &lt;a href=&quot;http://www.eclipse.org/eclipse/news/4.7/jdt.php#new-java-index&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;New Java index&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=8m22s&quot;&gt;Git&lt;/a&gt;&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=8m25s&quot; rel=&quot;noopener&quot;&gt;8:25&lt;/a&gt; &lt;a href=&quot;http://eclip.se/513247&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Drop Git URL to clone Git repository&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=8m48s&quot; rel=&quot;noopener&quot;&gt;8:48&lt;/a&gt; &lt;a href=&quot;http://eclip.se/358152&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Importing multiple projects from working tree&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=9m12s&quot; rel=&quot;noopener&quot;&gt;9:12&lt;/a&gt; &lt;a href=&quot;http://eclip.se/515088&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Double-click on staging view folder to expand it&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=9m22s&quot; rel=&quot;noopener&quot;&gt;9:22&lt;/a&gt; &lt;a href=&quot;http://eclip.se/509878&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Branch name normalizer&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://youtu.be/Y0-cO9wZj6w?t=9m31s&quot; rel=&quot;noopener&quot;&gt;9:31&lt;/a&gt; &lt;a href=&quot;http://eclip.se/515040&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Git Staging: Commit and Push (Alt+M) and Commit (Alt+C)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Please note that my video does not cover &lt;a href=&quot;http://eclipse.org/oxygen/noteworthy/#c-c-development-tools&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;C/C++&lt;/a&gt;, &lt;a href=&quot;https://wiki.eclipse.org/PDT/NewIn50&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;PHP&lt;/a&gt;, JavaScript and other improvements.&lt;/p&gt;
+&lt;p&gt;The six &lt;a href=&quot;https://www.youtube.com/playlist?list=PLy7t4z5SYNaTM66CahSlkMh5YkndYXMUq&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;Oxygen webinars&lt;/a&gt; (each of them about 50 minutes long) provide or will provide a deeper insight. Java users are recommended to follow &lt;a href=&quot;https://twitter.com/EclipseJavaIDE&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;&gt;@EclipseJavaIDE&lt;/a&gt; on Twitter, which provides daily tips and tricks.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.eclipse.org/downloads/eclipse-packages/&quot;&gt;Download Eclipse Oxygen&lt;/a&gt; as long as it is still warm and happy coding!&lt;/p&gt;&lt;br /&gt;  &lt;a href=&quot;http://feeds.wordpress.com/1.0/gocomments/eclipsehowl.wordpress.com/1162/&quot; rel=&quot;nofollow&quot;&gt;&lt;img alt=&quot;&quot; border=&quot;0&quot; src=&quot;http://feeds.wordpress.com/1.0/comments/eclipsehowl.wordpress.com/1162/&quot; /&gt;&lt;/a&gt; &lt;img alt=&quot;&quot; border=&quot;0&quot; height=&quot;1&quot; src=&quot;https://pixel.wp.com/b.gif?host=eclipsehowl.wordpress.com&amp;amp;blog=11064764&amp;amp;post=1162&amp;amp;subd=eclipsehowl&amp;amp;ref=&amp;amp;feed=1&quot; width=&quot;1&quot; /&gt;</description>
+	<pubDate>Wed, 28 Jun 2017 14:00:10 +0000</pubDate>
+</item>
+<item>
+	<title>itemis: Graphical Editing Framework (GEF) 5.0.0 Release</title>
+	<guid isPermaLink="true">https://blogs.itemis.com/en/graphical-editing-framework-gef-5.0.0-release</guid>
+	<link>https://blogs.itemis.com/en/graphical-editing-framework-gef-5.0.0-release</link>
+	<description>&lt;p&gt;I am happy to announce that version 5.0.0 of the Graphical Editing Framework (GEF) is part of the Eclipse Oxygen simultaneous release. &lt;img alt=&quot;GEF-logo.png&quot; height=&quot;114&quot; src=&quot;https://blogs.itemis.com/hs-fs/hubfs/Blog/GEF/GEF-logo.png?t=1498645182689&amp;amp;width=200&amp;amp;height=114&amp;amp;name=GEF-logo.png&quot; style=&quot;margin: 0px 0px 10px 10px; float: right;&quot; width=&quot;200&quot; /&gt;&lt;/p&gt; 
+&lt;p&gt;The project team has worked hard since the first graduation of the new code base (a.k.a. GEF4) a year ago and I think we have achieved quite a lot. The new GEF is in its entirety more mature, the framework parts are more concise, and some nice features have been added, too. The DOT editor, for instance, is now capable of handling (nearly) all flavours of Graphviz DOT, including HTML-like labels and several new attribute grammars. &lt;br /&gt;&lt;br /&gt;&lt;/p&gt; 
+&lt;p&gt;&lt;img alt=&quot;DOT-editor.png&quot; height=&quot;555&quot; src=&quot;https://blogs.itemis.com/hs-fs/hubfs/Blog/GEF/DOT-editor.png?t=1498645182689&amp;amp;width=724&amp;amp;height=555&amp;amp;name=DOT-editor.png&quot; width=&quot;724&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt; 
+&lt;p&gt;While rendering of HTML-like labels is still not supported yet, the related DOT Graph view is now capable of rendering clusters, which was a long awaited feature.  &lt;br /&gt;&lt;br /&gt;&lt;/p&gt; 
+&lt;p&gt;&lt;img alt=&quot;GEF-Dot-graph.png&quot; height=&quot;244&quot; src=&quot;https://blogs.itemis.com/hs-fs/hubfs/Blog/GEF/GEF-Dot-graph.png?t=1498645182689&amp;amp;width=724&amp;amp;height=244&amp;amp;name=GEF-Dot-graph.png&quot; width=&quot;724&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt; 
+&lt;p&gt;Concerning the framework components, a lot of work has taken place ‘under the hood’, especially within the MVC component. The previous separation between abstract concepts and toolkit-specific concretization has been revised, making that part of GEF much more lightweight and comprehensive. The most notable visible features that were added to the framework components are the snap-to-geometry support we have added to MVC, to complement the already provided snap-to-grid functionality, as well as various actions to perform zooming and scrolling. All in all, GEF now provides a really nice construction kit for building graphical applications.  &lt;br /&gt;&lt;br /&gt;&lt;/p&gt; 
+&lt;p&gt;&lt;img alt=&quot;GEF-MVC-Logo-Example.png&quot; height=&quot;367&quot; src=&quot;https://blogs.itemis.com/hs-fs/hubfs/Blog/GEF/GEF-MVC-Logo-Example.png?t=1498645182689&amp;amp;width=724&amp;amp;height=367&amp;amp;name=GEF-MVC-Logo-Example.png&quot; width=&quot;724&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt; 
+&lt;p&gt;In addition to the effort we have spent on GEF itself, my colleagues Hannes Niederhausen and Matthias Wienand have used the Oxygen release timeframe to develop a basic tutorial that covers the most important parts of the framework, which is provided for free. Try it out and let us know what you think!&lt;br /&gt;&lt;br /&gt;&lt;/p&gt; 
+&lt;p&gt;&lt;a class=&quot;cta_button&quot; href=&quot;https://info.itemis.com/cs/ci/?pg=03e89a61-aaf0-43d0-8890-cc79be189a85&amp;amp;pid=761475&amp;amp;ecid=&amp;amp;hseid=&amp;amp;hsic=&quot;&gt;&lt;img align=&quot;middle&quot; alt=&quot;Register for the GEF Tutorials&quot; class=&quot;hs-cta-img &quot; src=&quot;https://no-cache.hubspot.com/cta/default/761475/03e89a61-aaf0-43d0-8890-cc79be189a85.png&quot; /&gt;&lt;/a&gt;&lt;/p&gt;  
+&lt;img alt=&quot;&quot; height=&quot;1&quot; src=&quot;http://track.hubspot.com/__ptq.gif?a=761475&amp;amp;k=14&amp;amp;r=https%3A%2F%2Fblogs.itemis.com%2Fen%2Fgraphical-editing-framework-gef-5.0.0-release&amp;amp;bu=https%253A%252F%252Fblogs.itemis.com&amp;amp;bvt=rss&quot; style=&quot;width: 1px!important;&quot; width=&quot;1&quot; /&gt;</description>
+	<pubDate>Wed, 28 Jun 2017 08:29:00 +0000</pubDate>
+	<author>nyssen@itemis.de (Alexander Nyßen)</author>
+</item>
+<item>
+	<title>Kai Kreuzer: openHAB 2.1 Release</title>
+	<guid isPermaLink="false">http://www.kaikreuzer.de/2017/06/28/openhab21</guid>
+	<link>http://www.kaikreuzer.de/2017/06/28/openhab21/</link>
+	<description>&lt;p&gt;A few months have passed since the initial openHAB 2 release and the community has been incredibly active meanwhile. It is therefore time to push out a new stable release, so here it is: &lt;a href=&quot;https://github.com/openhab/openhab-distro/releases/tag/2.1.0&quot;&gt;openHAB 2.1&lt;/a&gt;!&lt;/p&gt;
+
+&lt;p&gt;You can go through the &lt;a href=&quot;https://github.com/openhab/openhab-distro/releases/tag/2.1.0&quot;&gt;official Release Notes&lt;/a&gt; to get a detailed idea of what is in this release, but as usual I will mention some of my personal highlights.&lt;/p&gt;
+
+
+
+&lt;h3 id=&quot;new-device-integrations&quot;&gt;New Device Integrations&lt;/h3&gt;
+
+&lt;p&gt;First of all, there are of course again very interesting new bindings available. Just right for the season, we have now support for two connected lawn mowers through the &lt;a href=&quot;http://docs.openhab.org/addons/bindings/gardena/readme.html&quot;&gt;Gardena binding&lt;/a&gt; and the &lt;a href=&quot;http://docs.openhab.org/addons/bindings/boschindego/readme.html&quot;&gt;Bosch Indego binding&lt;/a&gt;. Finally you can tell Alexa to mow your lawn!&lt;/p&gt;
+
+&lt;p&gt;Looking at more widespread use cases, there are some good news for all connected light fans: There is not only support for all the &lt;a href=&quot;http://docs.openhab.org/addons/bindings/lifx/readme.html#supported-things&quot;&gt;new products from LIFX&lt;/a&gt; like the LED strips or the LIFX+, which comes with an extra infrared channel to light up rooms for IP cameras, while they still appear dark for humans. Much more important for the mainstream is the support for the brand new &lt;a href=&quot;http://docs.openhab.org/addons/bindings/tradfri/readme.html&quot;&gt;IKEA Trådfri system&lt;/a&gt;, which will for sure quickly gain a significant marketshare with prices of less than 10€ for a dimmable bulb.&lt;/p&gt;
+
+&lt;p class=&quot;center&quot;&gt;&lt;img alt=&quot;Hardware&quot; src=&quot;http://www.kaikreuzer.de/img/2017-06_leds.jpg&quot; /&gt;
+&lt;small&gt;IKEA Trådfri and LIFX+&lt;/small&gt;&lt;/p&gt;
+
+&lt;p&gt;Talking about affordable home automation hardware, a very popular example is the chinese &lt;a href=&quot;http://docs.openhab.org/addons/bindings/mihome/readme.html&quot;&gt;Xiaomi Mi Smart Home&lt;/a&gt; product suite which ranges from wallbuttons. temperature sensors and plugs to curtains, human body sensors and smart cubes - all of which are now covered by openHAB as well.&lt;/p&gt;
+
+&lt;p&gt;There are further interesting integrations, which are not directly smart home related: Think of things like &lt;a href=&quot;http://docs.openhab.org/addons/bindings/folding/readme.html&quot;&gt;Folding@home&lt;/a&gt; through which you can use your computer as electric heating while helping to fight diseases - a pretty cool thing to do for everyone who heats electrically anyhow. Another example are the traffic-related integrations of &lt;a href=&quot;http://docs.openhab.org/addons/bindings/onebusaway/readme.html&quot;&gt;OneBusAway&lt;/a&gt; for live information of public transport and &lt;a href=&quot;http://docs.openhab.org/addons/bindings/tankerkoenig/readme.html&quot;&gt;Tankerkönig&lt;/a&gt; for the fuel prices of nearby gas stations.&lt;/p&gt;
+
+&lt;p&gt;Last but not least, I am happy that we eventually also have an initial version of a &lt;a href=&quot;http://docs.openhab.org/addons/bindings/zigbee/readme.html&quot;&gt;ZigBee binding&lt;/a&gt; through which it is already possible to access Philips Hue lights without requiring a Hue bridge and to use plugs from SmartThings with openHAB - many more devices to come!&lt;/p&gt;
+
+&lt;h3 id=&quot;eclipse-iot-marketplace&quot;&gt;Eclipse IoT Marketplace&lt;/h3&gt;
+
+&lt;p&gt;For everyone who is longing for even more integrations than the official openHAB distro can offer, the new &lt;a href=&quot;http://docs.openhab.org/configuration/eclipseiotmarket.html&quot;&gt;Eclipse IoT Marketplace integration&lt;/a&gt; comes in handy: The &lt;a href=&quot;https://marketplace.eclipse.org/taxonomy/term/4988%2C4396/title&quot;&gt;Eclipse Marketplace&lt;/a&gt; provides a catalog of add-ons from third parties, which can be browsed and installed easily - there might be many reasons for add-ons not being part of the official distro: Closed source, incompatible licenses, alpha versions, etc. The Eclipse IoT Marketplace is a wonderful service to make them visible to our users and to have a central place where everybody can publish add-ons easily.&lt;/p&gt;
+
+&lt;p class=&quot;center&quot;&gt;&lt;img alt=&quot;IoT Marketplace&quot; src=&quot;http://www.kaikreuzer.de/img/2017-06_iotmarket.png&quot; /&gt;
+&lt;small&gt;Third Party Add-ons from the Eclipse IoT Marketplace&lt;/small&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;system-administration&quot;&gt;System Administration&lt;/h3&gt;
+
+&lt;p&gt;Many improvements are available for the overall system administration. We not only released a new version of the &lt;a href=&quot;https://github.com/openhab/openhabian/releases&quot;&gt;hassle-free installer openHABian&lt;/a&gt; for the Raspberry Pi and PINE A64 that provides many new options for tweaking the system setup. It certainly also offers the option to smoothly upgrade a 2.0 installation to the new 2.1 release (using the APT upgrade mechanism, which is also available to all other Linux setups).&lt;/p&gt;
+
+&lt;p&gt;For the first time we now also offer &lt;a href=&quot;https://github.com/openhab/openhab-distro/releases/tag/2.1.0#upgrade-process&quot;&gt;upgrade scripts for manual installations&lt;/a&gt;, which should make the upgrade process pretty straight-forward.&lt;/p&gt;
+
+&lt;p&gt;Another cool new project is the &lt;a href=&quot;https://github.com/openhab/openhab-vscode/blob/master/README.md#openhab-vs-code-extension&quot;&gt;openHAB Extension for Visual Studio Code&lt;/a&gt;. This is a viable alternative for editing configuration files to the Designer or plain text editors. The VS Code extension supports syntax highlighting for all openHAB configuration files, code snippets, documentation search integration and a live preview using the Basic UI.&lt;/p&gt;
+
+&lt;p class=&quot;center&quot;&gt;&lt;img alt=&quot;VSCode&quot; src=&quot;https://github.com/openhab/openhab-vscode/raw/master/images/openhab-sitemap.gif&quot; /&gt;
+&lt;small&gt;VS Code Extension with Live Preview in Basic UI&lt;/small&gt;&lt;/p&gt;
+
+&lt;p&gt;This is just the start and the development of this extension is very active - so expect many more cool features to become available soon!&lt;/p&gt;
+
+&lt;h3 id=&quot;summary--outlook&quot;&gt;Summary &amp;amp; Outlook&lt;/h3&gt;
+
+&lt;p&gt;I would recommend to browse the &lt;a href=&quot;https://github.com/openhab/openhab-distro/releases/tag/2.1.0&quot;&gt;release notes&lt;/a&gt; in detail in order to find out many more interesting changes. Also note that there are many more contributions &lt;a href=&quot;https://github.com/openhab/openhab2-addons/pulls?q=is%3Apr+is%3Aopen+label%3Anewbinding&quot;&gt;in the pipeline&lt;/a&gt;, which did not make it into the release, but will appear soon in the nightly development snapshots. To account for the fact that we see a growing number of contributions, we plan to increase the release frequency in future and thus we put efforts into automating the release process. As always, please remember that openHAB is a project that is run by volunteers - so every help is welcome and highly appreciated! A very simple first step could be to &lt;a href=&quot;https://alternativeto.net/software/openhab/&quot;&gt;give us a like at alternativeTo&lt;/a&gt; - thanks!&lt;/p&gt;</description>
+	<pubDate>Wed, 28 Jun 2017 00:00:00 +0000</pubDate>
+</item>
+<item>
+	<title>Eclipse Announcements: Early Submission Deadline for EclipseCon Europe 2017</title>
+	<guid isPermaLink="true">http://feedproxy.google.com/~r/eclipse/fnews/~3/ZXRhOWkCRfE/cfp</guid>
+	<link>http://feedproxy.google.com/~r/eclipse/fnews/~3/ZXRhOWkCRfE/cfp</link>
+	<description>Submit your talks by June 30 to be selected for featuring in the early promotion. October 24-26 in Ludwigsburg Germany.&lt;img alt=&quot;&quot; height=&quot;1&quot; src=&quot;http://feeds.feedburner.com/~r/eclipse/fnews/~4/ZXRhOWkCRfE&quot; width=&quot;1&quot; /&gt;</description>
+	<pubDate>Mon, 26 Jun 2017 14:00:00 +0000</pubDate>
+</item>
+<item>
+	<title>Michael Spector: Profiling Spark Applications: The Easy Way</title>
+	<guid isPermaLink="false">tag:blogger.com,1999:blog-34385728.post-4362206950328131090</guid>
+	<link>http://spektom.blogspot.com/2017/06/profiling-spark-applications-easy-way.html</link>
+	<description>&lt;div&gt;&lt;br /&gt;&lt;/div&gt;Recently, I thought about some one-click way to profile Spark applications, so it could be easily integrated in any work environment without the need to configure the system.&lt;br /&gt;&lt;br /&gt;&lt;br /&gt;The modern way to report profile statistics about an application (any application, not just Spark or Java application) is generating a single .SVG file called &quot;flame graph&quot;. Since this is a regular vector graphic format, the file can be opened in any browser. Moreover, you can navigate between different stack frames by clicking on them, and even search for a symbol name by clicking on &quot;Search&quot; link.&lt;br /&gt;&lt;br /&gt;&lt;br /&gt;This is how sample flame graph looks like:&lt;br /&gt;&lt;div class=&quot;slate-resizable-image-embed slate-image-embed__resize-full-width&quot; contenteditable=&quot;false&quot;&gt;&lt;ul class=&quot;slate-image-embed__toolbar&quot; style=&quot;background-position: 0px 0px; border: 0px; height: 48px; line-height: 32px; padding: 0px 0px 8px; vertical-align: baseline; width: 744px;&quot;&gt;&lt;li style=&quot;background-position: 0px 0px; border: 0px; display: inline-block; margin: 0px 4px; padding: 0px; vertical-align: baseline;&quot;&gt;&lt;button class=&quot;slate-image-embed-button__resize-left slate-image-embed-button&quot;&gt;&lt;/button&gt;&lt;/li&gt;&lt;li style=&quot;background-position: 0px 0px; border: 0px; display: inline-block; margin: 0px 4px; padding: 0px; vertical-align: baseline;&quot;&gt;&lt;button class=&quot;slate-image-embed-button__resize-middle slate-image-embed-button&quot;&gt;&lt;/button&gt;&lt;/li&gt;&lt;li style=&quot;background-position: 0px 0px; border: 0px; display: inline-block; margin: 0px 4px; padding: 0px; vertical-align: baseline;&quot;&gt;&lt;button class=&quot;slate-image-embed-button__resize-full-width slate-image-embed-button slate-image-embed-button__active&quot;&gt;&lt;/button&gt;&lt;/li&gt;&lt;li style=&quot;background-position: 0px 0px; border: 0px; display: inline-block; margin: 0px 4px; padding: 0px; vertical-align: baseline;&quot;&gt;&lt;button class=&quot;slate-image-embed-button__resize-bleed slate-image-embed-button&quot;&gt;&lt;/button&gt;&lt;/li&gt;&lt;li style=&quot;background-position: 0px 0px; border: 0px; display: inline-block; margin: 0px 4px; padding: 0px; vertical-align: baseline;&quot;&gt;&lt;button class=&quot;slate-image-embed-button__resize-right slate-image-embed-button&quot;&gt;&lt;/button&gt;&lt;/li&gt;&lt;/ul&gt;&lt;img class=&quot;slate-image-embed__resize-full-width&quot; src=&quot;https://media.licdn.com/mpr/mpr/AAEAAQAAAAAAAAt_AAAAJDQ4YTE2NTE3LTc1ZGEtNDk1OC04MTQ0LWNhNWJhMzFlMTI2Mg.png&quot; style=&quot;background-position: 0px 0px; border: 0px; display: inline-block; height: auto; margin: 0px auto; padding: 0px; vertical-align: baseline; width: 744px;&quot; /&gt;&lt;/div&gt;The y-axis shows the stack depth while the x-axis shows time spent in a stack frame.&lt;br /&gt;&lt;br /&gt;In order to generate flame graphs, there are two mandatory processes usually: &lt;br /&gt;&lt;ul&gt;&lt;li&gt;Capture stack traces from a running process, and dump them to disk. &lt;/li&gt;&lt;li&gt;Parse these stack traces, and generate .SVG file. &lt;/li&gt;&lt;/ul&gt;For Java based applications it stack traces can be gathered using commercial features of Oracle JDK (using -XX:+FlightRecorder option). There's an &lt;a href=&quot;https://gist.github.com/kayousterhout/7008a8ebf2babeedc7ce6f8723fd1bf4&quot;&gt;article&lt;/a&gt; that explains how to profile Spark applications using this option.&lt;br /&gt;&lt;br /&gt;In OpenJDK this feature is not available, but luckily there are other options. Once of them is using &lt;a href=&quot;https://github.com/etsy/statsd-jvm-profiler&quot;&gt;statsd JVM profiler&lt;/a&gt; library from &lt;a href=&quot;http://etsy.com/&quot;&gt;Etsy&lt;/a&gt;. This library integrates as agent into JVM, gathers statistics like CPU or memory usage, and send it to &lt;a href=&quot;https://github.com/etsy/statsd&quot;&gt;statsd&lt;/a&gt; server in real time. Apparently, this library supports reporting to InfluxDB &lt;a href=&quot;https://github.com/etsy/statsd-jvm-profiler/blob/master/src/main/java/com/etsy/statsd/profiler/reporter/InfluxDBReporter.java&quot;&gt;as well&lt;/a&gt; .&lt;br /&gt;&lt;br /&gt;&lt;div&gt;Keeping the above in mind, the whole process will look like this:&lt;br /&gt;&lt;ol&gt;&lt;li&gt;Have InfluxDB running on random port.&lt;/li&gt;&lt;li&gt;Start Spark with the statsd profiler Jar in its classpath and with the configuration that tells it to report statistics back to the InfluxDB instance.&lt;/li&gt;&lt;li&gt;After running Spark application, query all the reported metrics from the InfluxDB instance.&lt;/li&gt;&lt;li&gt;Run a script that generates the target report.&lt;/li&gt;&lt;li&gt;Stop the InfluxDB instance.&lt;/li&gt;&lt;li&gt;Store generated .SVG file somewhere, or send it to someone.&lt;/li&gt;&lt;/ol&gt;The following script is a wrapper to ‘spark-submit’ command, which does all that:&lt;/div&gt;&lt;div&gt;&lt;pre class=&quot;brush:bash&quot;&gt;#!/bin/bash&lt;br /&gt;&lt;br /&gt;set -e&lt;br /&gt;trap 'kill $(jobs -p) 2&amp;gt;/dev/null' EXIT&lt;br /&gt;&lt;br /&gt;function find_unused_port() {&lt;br /&gt;  for port in $(seq $1 65000); do&lt;br /&gt;    echo -ne &quot;\035&quot; | telnet 127.0.0.1 $port &amp;gt;/dev/null 2&amp;gt;&amp;amp;1;&lt;br /&gt;    if [ $? -eq 1 ]; then&lt;br /&gt;      echo $port&lt;br /&gt;      exit&lt;br /&gt;    fi&lt;br /&gt;  done&lt;br /&gt;  echo &quot;ERROR: Can't find unused port in range $1-65000&quot;&lt;br /&gt;  exit 1&lt;br /&gt;}&lt;br /&gt;&lt;br /&gt;function install_deps() {&lt;br /&gt;  for cmd in python2.7 perl pip; do&lt;br /&gt;    if ! which $cmd &amp;gt;/dev/null 2&amp;gt;&amp;amp;1; then&lt;br /&gt;      echo &quot;ERROR: $cmd is not installed!&quot;&lt;br /&gt;      exit 1&lt;br /&gt;    fi&lt;br /&gt;  done&lt;br /&gt;&lt;br /&gt;  echo -e &quot;[$(date +%FT%T)] Installing dependencies&quot;&lt;br /&gt;  [ ! -d $install_dir ] &amp;amp;&amp;amp; mkdir $install_dir&lt;br /&gt;  pushd $install_dir &amp;gt;/dev/null&lt;br /&gt;  pip -q install --user influxdb blist&lt;br /&gt;&lt;br /&gt;  wget -qc https://github.com/etsy/statsd-jvm-profiler/releases/download/2.1.0/statsd-jvm-profiler-2.1.0-jar-with-dependencies.jar&lt;br /&gt;  ln -sf statsd-jvm-profiler-2.1.0-jar-with-dependencies.jar statsd-jvm-profiler.jar&lt;br /&gt;&lt;br /&gt;  wget -qc https://raw.githubusercontent.com/aviemzur/statsd-jvm-profiler/master/visualization/influxdb_dump.py&lt;br /&gt;  wget -qc https://raw.githubusercontent.com/brendangregg/FlameGraph/master/flamegraph.pl&lt;br /&gt;&lt;br /&gt;  wget -qc https://dl.influxdata.com/influxdb/releases/influxdb-1.2.4_linux_amd64.tar.gz&lt;br /&gt;  tar -xzf influxdb-1.2.4_linux_amd64.tar.gz&lt;br /&gt;  ln -sf influxdb-1.2.4-1 influxdb&lt;br /&gt;  popd &amp;gt;/dev/null&lt;br /&gt;}&lt;br /&gt;&lt;br /&gt;function run_influxdb() {&lt;br /&gt;  echo -e &quot;[$(date +%FT%T)] Starting InfluxDB&quot;&lt;br /&gt;  cat &amp;lt;&amp;lt; EOF &amp;gt;influxdb.conf&lt;br /&gt;reporting-disabled = true&lt;br /&gt;hostname = &quot;${local_ip}&quot;&lt;br /&gt;bind-address = &quot;:${influx_meta_port}&quot;&lt;br /&gt;[meta]&lt;br /&gt;  dir = &quot;$(pwd)/influxdb/meta&quot;&lt;br /&gt;[data]&lt;br /&gt;  dir = &quot;$(pwd)/influxdb/data&quot;&lt;br /&gt;  wal-dir = &quot;$(pwd)/influxdb/wal&quot;&lt;br /&gt;[admin]&lt;br /&gt;  enabled = false&lt;br /&gt;[http]&lt;br /&gt;  bind-address = &quot;:${influx_http_port}&quot;&lt;br /&gt;EOF&lt;br /&gt;  rm -rf influxdb&lt;br /&gt;  $install_dir/influxdb/usr/bin/influxd -config influxdb.conf &amp;gt;influxdb.log 2&amp;gt;&amp;amp;1 &amp;amp;&lt;br /&gt;&lt;br /&gt;  wait_secs=5&lt;br /&gt;  while [ $wait_secs -gt 0 ]; do&lt;br /&gt;    if curl -sS -i $influx_uri/ping 2&amp;gt;/dev/null | grep X-Influxdb-Version &amp;gt;/dev/null; then&lt;br /&gt;      break&lt;br /&gt;    fi&lt;br /&gt;    sleep 1&lt;br /&gt;    wait_secs=$(($wait_secs-1))&lt;br /&gt;  done&lt;br /&gt;&lt;br /&gt;  if [ $wait_secs -eq 0 ]; then&lt;br /&gt;    echo &quot;ERROR: Couldn't start InfluxDB!&quot;&lt;br /&gt;    exit 1&lt;br /&gt;  fi&lt;br /&gt;&lt;br /&gt;  curl -sS -X POST $influx_uri/query --data-urlencode &quot;q=CREATE DATABASE profiler&quot; &amp;gt;/dev/null&lt;br /&gt;  curl -sS -X POST $influx_uri/query --data-urlencode &quot;q=CREATE USER profiler WITH PASSWORD 'profiler' WITH ALL PRIVILEGES&quot; &amp;gt;/dev/null&lt;br /&gt;}&lt;br /&gt;&lt;br /&gt;function run_spark_submit() {&lt;br /&gt;  spark_args=()&lt;br /&gt;  jars=$install_dir/statsd-jvm-profiler.jar&lt;br /&gt;  while [[ $# &amp;gt; 0 ]]; do&lt;br /&gt;    case &quot;$1&quot; in&lt;br /&gt;      --jars) jars=&quot;$jars,$2&quot;&lt;br /&gt;        shift&lt;br /&gt;        ;;&lt;br /&gt;      *) spark_args+=(&quot;$1&quot;)&lt;br /&gt;        [[ &quot;$1&quot; == *.jar ]] &amp;amp;&amp;amp; flamegraph_title=&quot;$1&quot;&lt;br /&gt;        ;;&lt;br /&gt;    esac&lt;br /&gt;    shift&lt;br /&gt;  done&lt;br /&gt;&lt;br /&gt;  spark_cmd=(spark-submit)&lt;br /&gt;  spark_cmd+=(--jars)&lt;br /&gt;  spark_cmd+=(&quot;$jars&quot;)&lt;br /&gt;  spark_cmd+=(--conf)&lt;br /&gt;  spark_cmd+=(&quot;spark.executor.extraJavaOptions=-javaagent:statsd-jvm-profiler.jar=server=${local_ip},port=${influx_http_port},reporter=InfluxDBReporter,database=profiler,username=profiler,password=profiler,prefix=sparkapp,tagMapping=spark&quot;)&lt;br /&gt;  spark_cmd+=(${spark_args[@]})&lt;br /&gt;&lt;br /&gt;  echo -e &quot;[$(date +%FT%T)] Executing: ${spark_cmd[@]}&quot;&lt;br /&gt;  &quot;${spark_cmd[@]}&quot;&lt;br /&gt;}&lt;br /&gt;&lt;br /&gt;function generate_flamegraph() {&lt;br /&gt;  rm -rf stack_traces&lt;br /&gt;  python2.7 $install_dir/influxdb_dump.py -o $local_ip -r $influx_http_port -u profiler -p profiler -d profiler -t spark -e sparkapp -x stack_traces&lt;br /&gt;  perl $install_dir/flamegraph.pl --title &quot;$flamegraph_title&quot; stack_traces/all_*.txt &amp;gt; flamegraph.svg&lt;br /&gt;  rm -rf stack_traces&lt;br /&gt;  echo -e &quot;[$(date +%FT%T)] Created flamegraph: $(pwd)/flamegraph.svg&quot;&lt;br /&gt;}&lt;br /&gt;&lt;br /&gt;local_ip=$(ip route get 8.8.8.8 | awk '{print $NF; exit}')&lt;br /&gt;install_dir=$HOME/.spark-flamegraph&lt;br /&gt;influx_meta_port=$(find_unused_port 48080)&lt;br /&gt;influx_http_port=$(find_unused_port $(($influx_meta_port+1)))&lt;br /&gt;influx_uri=http://${local_ip}:${influx_http_port}&lt;br /&gt;flamegraph_title=&quot;Spark Application&quot;&lt;br /&gt;&lt;br /&gt;install_deps&lt;br /&gt;run_influxdb&lt;br /&gt;run_spark_submit &quot;$@&quot;&lt;br /&gt;generate_flamegraph&lt;br /&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: #f3f6f8; font-size: 1.6rem;&quot;&gt;&lt;br /&gt;&lt;/span&gt;&lt;/div&gt;The script is also available on &lt;a href=&quot;https://gist.github.com/spektom/ee08f071b6ee31ff6c27de29980b49a7&quot;&gt;this&lt;/a&gt; gist.&lt;br /&gt;&lt;br /&gt;&lt;br /&gt;For the sake of justice, it should be noted that the following utilities must present on your system prior to running the script: perl, python2.7 and pip. Otherwise, the script was used in Amazon EMR environment without any issues. Just use the script instead of usual spark-submit command, and it will profile your application. and create a report:&lt;br /&gt;&lt;div&gt;&lt;br /&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;pre class=&quot;brush:bash&quot;&gt;[hadoop@ip-10-121-4-244 tmp]$ ./spark-submit-flamegraph --name 'etlite' --jars file://$(pwd)/probe-events-1.0.jar etlite_2.11-0.1.0.jar s3://mobility-artifacts/airflow/latest/config/etlite.conf&lt;br /&gt;[2017-06-05T12:34:05] Installing dependencies&lt;br /&gt;[2017-06-05T12:34:09] Starting InfluxDB&lt;br /&gt;[2017-06-05T12:34:10] Executing: spark-submit --jars /home/hadoop/.spark-flamegraph/statsd-jvm-profiler.jar,file:///tmp/probe-events-1.0.jar --conf spark.executor.extraJavaOptions=-javaagent:statsd-jvm-profiler.jar=server=10.121.4.244,port=48081,reporter=InfluxDBReporter,database=profiler,username=profiler,password=profiler,prefix=sparkapp,tagMapping=spark --name etlite etlite_2.11-0.1.0.jar s3://mobility-artifacts/airflow/latest/config/etlite.conf&lt;br /&gt;17/06/05 12:34:11 INFO Main$: Configuration file = 's3://mobility-artifacts/airflow/latest/config/etlite.conf'&lt;br /&gt;17/06/05 12:34:14 INFO S3NativeFileSystem: Opening 's3://mobility-artifacts/airflow/latest/config/etlite.conf' for reading&lt;br /&gt;17/06/05 12:34:15 INFO SparkContext: Running Spark version 2.1.0&lt;br /&gt;&lt;br /&gt;... running Spark application ...&lt;br /&gt;&lt;br /&gt;17/06/05 12:35:17 INFO SparkContext: Successfully stopped SparkContext&lt;br /&gt;17/06/05 12:35:17 INFO ShutdownHookManager: Shutdown hook called&lt;br /&gt;17/06/05 12:35:17 INFO ShutdownHookManager: Deleting directory /mnt/tmp/spark-fa12133c-b605-4a73-814a-2dfd4ed6fdde&lt;br /&gt;&lt;br /&gt;... generating .svg file ...&lt;br /&gt;&lt;br /&gt;[2017-06-05T12:35:25] Created flamegraph: /tmp/flamegraph.svg&lt;br /&gt;&lt;/pre&gt;&lt;/div&gt;&lt;br /&gt;&lt;br /&gt;Integrating this script into Airflow Spark operator is straightforward, especially if your Spark operator is derived from BashOperator. Just make sure the script is available on all Spark Airflow workers, then do the replacement of spark-submit command depending on whether profile=True is passed as the operator argument.&lt;br /&gt;&lt;br /&gt;Post your weird flame graphs in comments! :)&lt;/div&gt;</description>
+	<pubDate>Sun, 25 Jun 2017 07:20:00 +0000</pubDate>
+	<author>noreply@blogger.com (Michael)</author>
+</item>
+<item>
+	<title>Jeremie Bresson: Asciidoctor: watch you build log</title>
+	<guid isPermaLink="true">http://jmini.github.io/blog/2017/2017-06-25_asciidoctor-watch-build-log.html</guid>
+	<link>http://jmini.github.io/blog/2017/2017-06-25_asciidoctor-watch-build-log.html</link>
+	<description>&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;Last thursday at Voxxed Days Luxembourg I had the opportunity to speak about asciidoctor in my talk (&lt;a href=&quot;http://cfp-voxxed-lux.yajug.org/2017/talk/KMC-5325/Documentation_as_code:_controler_la_qualite_!&quot;&gt;Documentation as code: contrôler la qualité !&lt;/a&gt;). Voxxed Days conferences are similar to Devoxx, but smaller (only one day). It was the second edition of Voxxed Days Luxembourg and the conference is really great (perfect organization, pleasant ambience, nice people and interesting conversations).&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;imageblock&quot;&gt; 
+ &lt;div class=&quot;content&quot;&gt; 
+  &lt;img alt=&quot;Voxxed Days Luxembourg&quot; src=&quot;http://jmini.github.io/blog/2017/2017-06-25_voxxed-pictures.png&quot; /&gt; 
+ &lt;/div&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;Back to my talk, I want to provide more details about a point I have presented: &lt;strong&gt;how to monitor your asciidoctor build logs with jenkins&lt;/strong&gt;.&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;During the build, asciidoctor tells you when something is unexpected. Let me give you a real example: In the &lt;a href=&quot;http://eclipsescout.github.io/&quot;&gt;eclipse scout documentation&lt;/a&gt;, you have a lot of code snippets with callouts to mark certain lines.&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;imageblock&quot; id=&quot;fig-doc&quot;&gt; 
+ &lt;div class=&quot;content&quot;&gt; 
+  &lt;img alt=&quot;Eclipse Scout documentation extract&quot; src=&quot;http://jmini.github.io/blog/2017/2017-06-25_eclipse-scout-doc-example.png&quot; /&gt; 
+ &lt;/div&gt; 
+ &lt;div class=&quot;title&quot;&gt;
+  Figure 1. Eclipse scout documentation extract
+ &lt;/div&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;In order to do this, you need to define the callout in your source code and add the explanation after the code snippet as presented in &lt;a href=&quot;http://jmini.github.io/blog/2017/2017-06-25_asciidoctor-watch-build-log.html#lst-callout&quot;&gt;Listing 1&lt;/a&gt;.&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;listingblock&quot; id=&quot;lst-callout&quot;&gt; 
+ &lt;div class=&quot;title&quot;&gt;
+  Listing 1. Callout example
+ &lt;/div&gt; 
+ &lt;div class=&quot;content&quot;&gt; 
+  &lt;pre class=&quot;prettyprint highlight&quot;&gt;&lt;code class=&quot;language-asciidoc&quot;&gt;[source,adoc]
+.Initial implementation of class OrganizationTablePage.
+----
+(..)
+    return TEXTS.get(&quot;Organizations&quot;); // &amp;lt;1&amp;gt;
+(..)
+----
+&amp;lt;1&amp;gt; Make sure to add a translated text entry for &quot;Organizations&quot; using the Scout NLS tooling&lt;/code&gt;&lt;/pre&gt; 
+ &lt;/div&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;If there is a mismatch between the two elements, you will get a warning in your logs:&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;listingblock&quot;&gt; 
+ &lt;div class=&quot;content&quot;&gt; 
+  &lt;pre&gt;[INFO]
+[INFO] --- asciidoctor-maven-plugin:1.5.5:process-asciidoc (book_scout_intro-to-html) @ scout_beginners_guide ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] ignoreDelta true
+[INFO] Copying 0 resource
+asciidoctor: WARNING: _TutorialStep2.adoc: line 247: no callouts refer to list item 1 beginners_guide/src/docs/beginners-guide.adoc
+[INFO]&lt;/pre&gt; 
+ &lt;/div&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;If you are using Jenkins as continuous integration server, the &lt;a href=&quot;https://plugins.jenkins.io/warnings&quot;&gt;warnings plugin&lt;/a&gt; helps you to find those lines in your log. It also keeps a record of them, in order to track the evolution over the time.&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;imageblock&quot;&gt; 
+ &lt;div class=&quot;content&quot;&gt; 
+  &lt;img alt=&quot;Jenkins Job&quot; src=&quot;http://jmini.github.io/blog/2017/2017-06-25_jenkins.png&quot; /&gt; 
+ &lt;/div&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;Here is how you can configure the plugin in the admin view in order to detect the asciidoctor lines:&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;imageblock&quot;&gt; 
+ &lt;div class=&quot;content&quot;&gt; 
+  &lt;img alt=&quot;Jenkins Admin configuration&quot; src=&quot;http://jmini.github.io/blog/2017/2017-06-25_jenkins_admin_config.png&quot; /&gt; 
+ &lt;/div&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;listingblock&quot;&gt; 
+ &lt;div class=&quot;title&quot;&gt;
+  Listing 2. Regular expression:
+ &lt;/div&gt; 
+ &lt;div class=&quot;content&quot;&gt; 
+  &lt;pre&gt;asciidoctor: (WARNING|ERROR): ([^:]+): line ([0-9]+): (.*)&lt;/pre&gt; 
+ &lt;/div&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;listingblock&quot;&gt; 
+ &lt;div class=&quot;title&quot;&gt;
+  Listing 3. Mapping Script:
+ &lt;/div&gt; 
+ &lt;div class=&quot;content&quot;&gt; 
+  &lt;pre&gt;import hudson.plugins.warnings.parser.Warning
+
+String category = matcher.group(1)
+String fileName = matcher.group(2)
+String lineNumber = matcher.group(3)
+String message = matcher.group(4)
+
+return new Warning(fileName, Integer.parseInt(lineNumber), &quot;Dynamic Parser&quot;, category, message);&lt;/pre&gt; 
+ &lt;/div&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;Then in your build definition you need to add a post-build step:&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;imageblock&quot;&gt; 
+ &lt;div class=&quot;content&quot;&gt; 
+  &lt;img alt=&quot;Jenkins Job configuration&quot; src=&quot;http://jmini.github.io/blog/2017/2017-06-25_jenkins_job_config.png&quot; /&gt; 
+ &lt;/div&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;Now you are informed when something goes wrong in your documentation. By the way there is the idea that Asciidoctor could produce a report containing all the warnings and errors that are discovered during the build. They could be collected in a xml or json file. For the moment &lt;a href=&quot;https://github.com/asciidoctor/asciidoctor/issues/44&quot;&gt;issue #44&lt;/a&gt; is still open.&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;By the way my slides are online on &lt;a href=&quot;https://www.slideshare.net/jmini/20170622-documentation-as-code&quot;&gt;SlideShare&lt;/a&gt;.&lt;/p&gt; 
+&lt;/div&gt; 
+&lt;div class=&quot;paragraph&quot;&gt; 
+ &lt;p&gt;PS: I have already proposed &lt;a href=&quot;https://www.eclipsecon.org/europe2017/session/documentation-code-asciidoctor&quot;&gt;a talk&lt;/a&gt; for EclipseCon Europe 2017. I hope I will get a slot to be able to present more aspects of the &quot;documentation as code&quot; pattern.&lt;/p&gt; 
+&lt;/div&gt;</description>
+	<pubDate>Sat, 24 Jun 2017 22:00:00 +0000</pubDate>
+</item>
+<item>
+	<title>Eclipse Announcements: PolarSys Capella Industry Consortium (IC) at Eclipse PolarSys</title>
+	<guid isPermaLink="true">http://feedproxy.google.com/~r/eclipse/fnews/~3/mlVswPugIWE/polarsys-capella-ic-announced</guid>
+	<link>http://feedproxy.google.com/~r/eclipse/fnews/~3/mlVswPugIWE/polarsys-capella-ic-announced</link>
+	<description>PolarSys Capella IC to host the Capella Ecosystem stakeholders in a vendor neutral way, organized by an open governance model.&lt;img alt=&quot;&quot; height=&quot;1&quot; src=&quot;http://feeds.feedburner.com/~r/eclipse/fnews/~4/mlVswPugIWE&quot; width=&quot;1&quot; /&gt;</description>
+	<pubDate>Tue, 20 Jun 2017 08:00:00 +0000</pubDate>
+</item>
+
+</channel>
+</rss>

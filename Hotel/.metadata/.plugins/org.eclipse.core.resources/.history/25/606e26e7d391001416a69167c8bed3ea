@@ -1,0 +1,19 @@
+
+public class Hotel {
+	 public String name;
+	 public int number;
+	 public int room;
+	 
+	 public static void main(String[] args) {
+		  Hotel Guest = new Hotel("Duncan",1,323);
+		  System.out.println(Guest);
+	  }
+
+		  public Hotel(String A,int B, int C){
+			  //constructor used to create the guests profile
+			  A = name;
+			  B = number;
+			  C = room;
+		  }
+	  
+}
